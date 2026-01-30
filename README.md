@@ -107,6 +107,7 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
 **Pitfalls:**
 *   **Cookies**: Refresh tokens are stored in HttpOnly cookies. Over plain HTTP, cookies marked `Secure` are dropped. Use HTTPS in production or set `COOKIE_SECURE=false` for LAN testing.
 *   **CORS**: Browsers enforce strict same-origin policies. If your frontend port or host changes, the backend must allow it in `CORS_ORIGIN`.
+*   **Featured images**: Uploads are stored as data URLs. For large images, use a hosted URL instead.
 
 ## Troubleshooting
 

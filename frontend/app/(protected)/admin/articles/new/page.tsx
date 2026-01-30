@@ -56,6 +56,7 @@ export default function ArticleEditorPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [featuredImageError, setFeaturedImageError] = useState('');
 
   const fetchArticle = async () => {
     if (!isEditing) return;
@@ -74,6 +75,36 @@ export default function ArticleEditorPage() {
   useEffect(() => {
     fetchArticle();
   }, [params.id]);
+
+  const handleFeaturedImageUpload = (file: File | null) => {
+    setFeaturedImageError('');
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setFeaturedImageError('Please select an image file.');
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setFeaturedImageError('Image must be smaller than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setArticle((prev) => ({
+          ...prev,
+          featuredImage: reader.result,
+        }));
+      }
+    };
+    reader.onerror = () => {
+      setFeaturedImageError('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const generateSlug = (title: string) => {
     return title
@@ -389,7 +420,7 @@ export default function ArticleEditorPage() {
               </CardHeader>
               <CardContent>
                 <Input
-                  value={article.featuredImage || ''}
+                  value={article.featuredImage?.startsWith('data:') ? '' : (article.featuredImage || '')}
                   onChange={(e) =>
                     setArticle((prev) => ({
                       ...prev,
@@ -398,6 +429,30 @@ export default function ArticleEditorPage() {
                   }
                   placeholder="https://example.com/image.jpg"
                 />
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="featuredImageUpload">Upload Image</Label>
+                  <Input
+                    id="featuredImageUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFeaturedImageUpload(e.target.files?.[0] || null)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Uploading stores a data URL. Use a hosted URL if you prefer.
+                  </p>
+                  {featuredImageError && (
+                    <p className="text-xs text-red-500">{featuredImageError}</p>
+                  )}
+                  {article.featuredImage && (
+                    <div className="mt-3 overflow-hidden rounded-md border border-input">
+                      <img
+                        src={article.featuredImage}
+                        alt="Featured preview"
+                        className="h-40 w-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
