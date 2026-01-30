@@ -48,7 +48,9 @@ In production, do not expose database or Redis ports.
 
 - PostgreSQL `5432`: keep internal only
 - Redis `6379`: keep internal only
-- Expose only Nginx (80/443) or the frontend/backend if you do not use a proxy
+- Expose only Nginx (80/443). Backend/frontend should stay internal.
+
+If you need local access for troubleshooting, use a separate `docker-compose.override.yml` and do not commit it.
 
 ## CORS on LAN / VPS
 

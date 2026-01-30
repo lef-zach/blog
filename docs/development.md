@@ -21,6 +21,8 @@ If you already configured the environment and just want to start services:
 docker compose up -d
 ```
 
+If you need direct access to Postgres/Redis locally, add a non-committed `docker-compose.override.yml` instead of exposing ports in `docker-compose.yml`.
+
 ## Rebuilding Images
 
 If you install new npm packages (`npm install`), you must rebuild the images because `node_modules` inside the container needs to update.

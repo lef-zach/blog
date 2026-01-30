@@ -72,6 +72,14 @@ curl -i http://localhost/api/v1/health
 curl -i http://localhost/api/v1/papers/metrics
 ```
 
+## Security Checklist (Production)
+
+- HTTPS enabled and `COOKIE_SECURE=true`
+- Strong `JWT_SECRET` and `JWT_REFRESH_SECRET` (rotate if leaked)
+- Only 80/443 exposed; Postgres/Redis/backends stay internal
+- CORS allowlist includes only your real domain
+- Admin registration disabled after first setup
+
 ## Ports & Configuration
 
 By default, the application exposes the following ports on your host machine:
