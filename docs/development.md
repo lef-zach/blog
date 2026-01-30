@@ -4,7 +4,7 @@ This guide covers running the project locally in a standard development workflow
 
 ## Running with Docker (Recommended)
 
-The default Docker setup mirrors production and does not include hot-reloading. For code changes, rebuild images.
+The default Docker setup mirrors production and does not include hot-reloading. For a clean setup with migrations and admin bootstrap, run `./install.sh`.
 
 ```bash
 docker compose up -d

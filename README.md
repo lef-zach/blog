@@ -39,19 +39,14 @@ Prerequisites: Docker and Docker Compose installed.
     ```
     *Set strong values for `JWT_SECRET` and `JWT_REFRESH_SECRET` before going public.*
 
-3.  **Start the Stack:**
+3.  **Install & Bootstrap:**
     ```bash
-    docker compose up -d
+    ./install.sh
     ```
+    This will build containers, run migrations, and prompt you to create the first admin.
     *(Note: `./scripts/deploy.sh` is destructive: it hard-resets git and deletes volumes.)*
 
-4.  **Run Migrations and Bootstrap an Admin:**
-    ```bash
-    docker compose exec backend npx prisma migrate deploy
-    ./scripts/bootstrap-admin.sh
-    ```
-
-5.  **Access the Application:**
+4.  **Access the Application:**
     *   **Frontend**: [http://localhost:5000](http://localhost:5000)
     *   **API**: [http://localhost:3001/api/v1](http://localhost:3001/api/v1)
 
