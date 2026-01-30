@@ -59,8 +59,8 @@ Prerequisites: Docker and Docker Compose installed.
     *(Note: `./scripts/deploy.sh` is destructive: it hard-resets git and deletes volumes.)*
 
 4.  **Access the Application:**
-    *   **Frontend**: [http://localhost:5000](http://localhost:5000)
-    *   **API**: [http://localhost:3001/api/v1](http://localhost:3001/api/v1)
+    *   **Frontend**: [http://localhost](http://localhost)
+    *   **API**: [http://localhost/api/v1](http://localhost/api/v1)
 
 ## Health Checks
 

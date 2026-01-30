@@ -21,13 +21,21 @@ fi
 
 API_BASE_URL=${API_BASE_URL:-http://localhost/api/v1}
 
-echo "Health check: $API_BASE_URL"
+if [[ "$API_BASE_URL" == http* ]]; then
+  BASE_URL=${BASE_URL:-${API_BASE_URL%/api/v1}}
+else
+  BASE_URL=${BASE_URL:-http://localhost}
+fi
 
-echo "- /health"
-curl -fsS "${API_BASE_URL}/health" >/dev/null
+HEALTH_URL=${HEALTH_URL:-${BASE_URL}/api/health}
+
+echo "Health check: ${BASE_URL}"
+
+echo "- /api/health"
+curl -fsS "${HEALTH_URL}" >/dev/null
 echo "  OK"
 
-echo "- /profile/public"
+echo "- /api/v1/profile/public"
 curl -fsS "${API_BASE_URL}/profile/public" >/dev/null
 echo "  OK"
 
@@ -74,7 +82,7 @@ PY
 
 rm -f "$tmp_response"
 
-echo "- /papers/metrics"
+echo "- /api/v1/papers/metrics"
 curl -fsS "${API_BASE_URL}/papers/metrics" \
   -H "Authorization: Bearer ${access_token}" >/dev/null
 echo "  OK"
