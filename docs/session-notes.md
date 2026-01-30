@@ -60,7 +60,3 @@ Restart nginx after config changes:
 ```bash
 sudo docker compose restart nginx
 ```
-
-## Notes
-
-- `blog_30/` is ignored in `.gitignore` for local transcript exports.
