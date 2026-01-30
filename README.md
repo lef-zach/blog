@@ -44,6 +44,7 @@ Prerequisites: Docker and Docker Compose installed.
     ./install.sh
     ```
     This will build containers, run migrations, optionally configure HTTPS, and create the first admin.
+    It also disables the default nginx server block to avoid conflicting `server_name` warnings.
     You can run it non-interactively:
     ```bash
     CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
