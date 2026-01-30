@@ -93,10 +93,11 @@ export default function ArticleEditorPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      const result = reader.result;
+      if (typeof result === 'string') {
         setArticle((prev) => ({
           ...prev,
-          featuredImage: reader.result,
+          featuredImage: result,
         }));
       }
     };
