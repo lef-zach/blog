@@ -32,19 +32,26 @@ Prerequisites: Docker and Docker Compose installed.
     ```
 
 2.  **Environment Setup:**
-    Copy the example environment files. The defaults work out-of-the-box for local development.
+    Copy the example environment files and update secrets for your environment.
     ```bash
     cp backend/.env.example backend/.env
     cp frontend/.env.example frontend/.env
     ```
+    *Set strong values for `JWT_SECRET` and `JWT_REFRESH_SECRET` before going public.*
 
 3.  **Start the Stack:**
     ```bash
-    ./scripts/deploy.sh
+    docker compose up -d
     ```
-    *(Note: Ensure Docker is installed and running)*
+    *(Note: `./scripts/deploy.sh` is destructive: it hard-resets git and deletes volumes.)*
 
-4.  **Access the Application:**
+4.  **Run Migrations and Bootstrap an Admin:**
+    ```bash
+    docker compose exec backend npx prisma migrate deploy
+    docker compose exec backend node -e "const { PrismaClient } = require('@prisma/client'); const bcrypt=require('bcrypt'); const prisma=new PrismaClient(); (async()=>{ const email='you@example.com'; const password='YOUR_PASSWORD'; const username='admin'; const existing=await prisma.user.findUnique({ where:{ email } }); if(existing){ console.log('Admin already exists:', existing.id); return; } const hash=await bcrypt.hash(password, 12); const user=await prisma.user.create({ data:{ email, username, password:hash, name:'Admin', role:'ADMIN' } }); console.log('Created admin:', user.id); })().catch(e=>{console.error(e); process.exit(1);}).finally(()=>prisma.$disconnect());"
+    ```
+
+5.  **Access the Application:**
     *   **Frontend**: [http://localhost:5000](http://localhost:5000)
     *   **API**: [http://localhost:3001/api/v1](http://localhost:3001/api/v1)
 
@@ -55,7 +62,7 @@ By default, the application exposes the following ports on your host machine:
 | Service | Host Port | Internal Port | Description |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | `5000` | `3000` | User Interface |
-| **Backend** | `3001` | `5000` | API Server |
+| **Backend** | `3001` | `3001` | API Server |
 | **Database** | `5432` | `5432` | PostgreSQL (exposed for debugging) |
 | **Redis** | `6379` | `6379` | Redis (exposed for debugging) |
 
@@ -71,7 +78,7 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
       ports:
         - "8080:3000" # Map host 8080 to container 3000
     ```
-2.  Update internal CORS configuration if necessary. Since the backend allows the frontend origin, if you access the site via a different port, you usually update the `CORS_ORIGIN` in `backend/.env`:
+2.  Update internal CORS configuration if necessary. Since the backend allows the frontend origin, if you access the site via a different port, update `CORS_ORIGIN` in `backend/.env` or `docker-compose.yml`:
     ```env
     CORS_ORIGIN=http://localhost:8080
     ```
@@ -81,8 +88,8 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
     ```
 
 **Pitfalls:**
-*   **Cookies**: Access tokens are stored in HttpOnly cookies. If you change the API domain/port, ensure browsers treat the cookie path correctly.
-*   **CORS**: Browsers enforced strict same-origin policies. If your frontend port changes, the backend *must* know about it in `CORS_ORIGIN`.
+*   **Cookies**: Refresh tokens are stored in HttpOnly cookies. Over plain HTTP, cookies marked `Secure` are dropped. Use HTTPS in production or set `COOKIE_SECURE=false` for LAN testing.
+*   **CORS**: Browsers enforce strict same-origin policies. If your frontend port or host changes, the backend must allow it in `CORS_ORIGIN`.
 
 ## Troubleshooting
 

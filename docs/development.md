@@ -4,21 +4,18 @@ This guide covers running the project locally in a standard development workflow
 
 ## Running with Docker (Recommended)
 
-The Docker setup mirrors production but enables hot-reloading for development convenience.
+The default Docker setup mirrors production and does not include hot-reloading. For code changes, rebuild images.
 
 ```bash
-docker compose up
+docker compose up -d
 ```
-
-*   **Backend Changes**: The `backend/` directory is mounted as a volume. Changes to `.ts` files trigger `nodemon` to restart the server automatically.
-*   **Frontend Changes**: The `frontend/` directory is mounted. Next.js Fast Refresh handles UI updates instantly.
 
 ## Rebuilding Images
 
 If you install new npm packages (`npm install`), you must rebuild the images because `node_modules` inside the container needs to update.
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 ## Database Management
@@ -26,14 +23,18 @@ docker compose up --build
 We use Prisma for database schema management.
 
 **Running Migrations:**
-You need to run prisma commands *inside* the backend container or pointing to the exposed port. Ideally, run inside the container:
+Run Prisma inside the backend container:
 
 ```bash
-# Enter the backend container
-docker compose exec backend sh
+docker compose exec backend npx prisma migrate deploy
 
-# Run migrations
-npx prisma migrate dev
+## Bootstrap an Admin User
+
+The UI relies on an admin user for public settings. Create one after migrations:
+
+```bash
+docker compose exec backend node -e "const { PrismaClient } = require('@prisma/client'); const bcrypt=require('bcrypt'); const prisma=new PrismaClient(); (async()=>{ const email='you@example.com'; const password='YOUR_PASSWORD'; const username='admin'; const existing=await prisma.user.findUnique({ where:{ email } }); if(existing){ console.log('Admin already exists:', existing.id); return; } const hash=await bcrypt.hash(password, 12); const user=await prisma.user.create({ data:{ email, username, password:hash, name:'Admin', role:'ADMIN' } }); console.log('Created admin:', user.id); })().catch(e=>{console.error(e); process.exit(1);}).finally(()=>prisma.$disconnect());"
+```
 ```
 
 **Viewing Data (Prisma Studio):**
@@ -42,12 +43,12 @@ You can run Prisma Studio locally if you have Node installed on your host:
 cd backend
 npx prisma studio
 ```
-It will connect to `localhost:5432` (since we exposed that port in docker-compose).
+It will connect to `localhost:5432` (since we expose that port in `docker-compose.yml`).
 
 ## Debugging
 
 ### Auth Issues
-*   **"Session expired" constantly**: Check if your browser is blocking "Third-party cookies" if running frontend/backend on different domains (though localhost ports are usually fine).
+*   **"Session expired" constantly**: If you are using HTTP, set `COOKIE_SECURE=false` (or use HTTPS). Secure cookies are dropped over HTTP.
 *   **Log Inspection**: Use the structured logs to trace where auth fails.
     ```bash
     docker compose logs -f backend | grep "auth_login_failed"

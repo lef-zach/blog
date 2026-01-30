@@ -38,7 +38,8 @@ The system uses a **Dual-Token Strategy** for security:
     *   **Purpose**: Access resources.
 
 2.  **Refresh Token**
-    *   **Storage**: Long-lived (7 days), stored in **HttpOnly, Secure, SameSite=Lax Cookie**.
+    *   **Storage**: Long-lived (7 days), stored in **HttpOnly, SameSite=Lax Cookie**.
+    *   **Secure Flag**: Enabled in production (HTTPS). For LAN testing over HTTP, set `COOKIE_SECURE=false`.
     *   **Usage**: Sent automatically by the browser to `/auth/refresh` endpoint only.
     *   **Purpose**: obtain new Access Tokens without user interaction.
 

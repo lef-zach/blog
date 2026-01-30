@@ -8,6 +8,8 @@ All endpoints are prefixed with `/api/v1`.
 `POST /auth/register`
 Creates a new user account.
 *   **Body**: `{ "email": "user@example.com", "password": "...", "name": "..." }`
+    *   Either `email` or `username` is required.
+    *   Passwords must be at least 8 characters.
 *   **Response**: `201 Created` with user data.
 
 ### Login
@@ -78,7 +80,7 @@ Lists all newsletter subscribers.
 ```bash
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}' \
+  -d '{"email":"you@example.com","password":"YOUR_PASSWORD"}' \
   -c cookies.txt
 ```
 
