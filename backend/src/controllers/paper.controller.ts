@@ -108,12 +108,12 @@ export const getMetrics = async (req: AuthRequest, res: Response, next: NextFunc
 // Route definitions
 router.post('/', authenticate, createPaper);
 router.get('/', optionalAuthenticate, getPapers);
-router.get('/:id', authenticate, getPaperById);
-router.put('/:id', authenticate, updatePaper);
-router.delete('/:id', authenticate, deletePaper);
+router.get('/metrics', authenticate, getMetrics);
 router.post('/sync', authenticate, syncPapers);
 router.post('/import/bibtex', authenticate, importBibtex);
 router.get('/export/bibtex', authenticate, exportBibtex);
-router.get('/metrics', authenticate, getMetrics);
+router.get('/:id', authenticate, getPaperById);
+router.put('/:id', authenticate, updatePaper);
+router.delete('/:id', authenticate, deletePaper);
 
 export { router as paperRouter };
