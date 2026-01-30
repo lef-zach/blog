@@ -249,8 +249,11 @@ export class ApiClient {
         } catch (error) {
           this.clearTokens();
           this.disableRefresh();
-          if (!isAuthMe && !isAuthLogout && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+          if (!isAuthMe && !isAuthLogout && typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            if (path.startsWith('/admin') && !path.includes('/login')) {
+              window.location.href = '/login';
+            }
           }
           throw new ApiError('UNAUTHORIZED', 'Session expired');
         }
@@ -291,6 +294,10 @@ export class ApiClient {
         });
 
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            this.disableRefresh(60);
+            throw new ApiError('REFRESH_UNAUTHORIZED', 'No refresh token available');
+          }
           if (response.status === 429) {
             const retryAfter = response.headers.get('retry-after');
             const retrySeconds = retryAfter ? Number(retryAfter) : 15 * 60;

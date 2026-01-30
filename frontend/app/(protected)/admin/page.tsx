@@ -96,10 +96,10 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await apiClient.logout();
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (err: any) {
       console.error('Logout failed:', err);
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 

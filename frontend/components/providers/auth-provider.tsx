@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // ... existing logout logic
             if (apiClient.isLoggedIn()) {
                 apiClient.logout();
-                router.push('/login');
+                router.push('/');
             }
         };
 
