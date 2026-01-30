@@ -149,6 +149,7 @@ class ApiError extends Error {
 export class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private refreshDisabled = false;
   // No refreshToken stored in client anymore (HttpOnly Cookie)
 
   constructor(baseUrl: string = API_BASE_URL) {
@@ -158,10 +159,15 @@ export class ApiClient {
 
   private saveTokens(accessToken: string) {
     this.accessToken = accessToken;
+    this.refreshDisabled = false;
   }
 
   private clearTokens() {
     this.accessToken = null;
+  }
+
+  private disableRefresh() {
+    this.refreshDisabled = true;
   }
 
   public async request<T>(
@@ -200,7 +206,7 @@ export class ApiClient {
         // Let's try refresh once.
         try {
           // Avoid infinite loop if refresh itself fails
-          if (endpoint.includes('/auth/refresh')) {
+          if (endpoint.includes('/auth/refresh') || this.refreshDisabled) {
             throw new Error('Refresh failed');
           }
 
@@ -210,6 +216,7 @@ export class ApiClient {
 
         } catch (error) {
           this.clearTokens();
+          this.disableRefresh();
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
@@ -232,6 +239,9 @@ export class ApiClient {
   private refreshPromise: Promise<void> | null = null;
 
   public async refreshAccessToken() {
+    if (this.refreshDisabled) {
+      throw new ApiError('REFRESH_DISABLED', 'Refresh is disabled');
+    }
     // If a refresh is already in progress, return the existing promise
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -270,6 +280,9 @@ export class ApiClient {
         } else {
           throw new Error('Invalid refresh response');
         }
+      } catch (error) {
+        this.disableRefresh();
+        throw error;
       } finally {
         this.refreshPromise = null;
       }
@@ -334,6 +347,7 @@ export class ApiClient {
       });
     } finally {
       this.clearTokens();
+      this.disableRefresh();
     }
   }
 
