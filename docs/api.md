@@ -60,6 +60,9 @@ Get a single article by slug.
 ### GET /papers
 List Google Scholar papers.
 
+### GET /papers/metrics (Protected)
+Returns aggregate paper metrics for the authenticated user.
+
 ---
 
 ## Admin (Protected)

@@ -68,11 +68,9 @@ export default function AdminDashboard() {
       const draftArticles = articles.filter((a: Article) => a.status === 'DRAFT').length;
       const totalViews = articles.reduce((sum: number, a: Article) => sum + (a.views || 0), 0);
 
-      // Fetch papers
-      const papersResponse = await apiClient.getPapers();
-      const papers = (papersResponse.data.papers || []) as any[];
-      const totalPapers = papersResponse.data.pagination.total;
-      const totalCitations = papers.reduce((sum: number, p: any) => sum + (p.citations || 0), 0);
+      const metricsResponse = await apiClient.getPaperMetrics();
+      const totalPapers = metricsResponse.data.totalPapers;
+      const totalCitations = metricsResponse.data.totalCitations;
 
       setStats({
         totalArticles,

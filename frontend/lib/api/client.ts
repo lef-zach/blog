@@ -433,6 +433,17 @@ export class ApiClient {
     return response;
   }
 
+  async getPaperMetrics() {
+    const response = await this.request<{
+      totalPapers: number;
+      totalCitations: number;
+      hIndex: number;
+      i10Index: number;
+      averageCitations: number;
+    }>('/papers/metrics');
+    return response;
+  }
+
   // Articles
   async getArticle(slugOrId: string) {
     const response = await this.request<Article>(`/articles/${slugOrId}`);
