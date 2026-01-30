@@ -5,6 +5,13 @@ This guide covers running the project locally in a standard development workflow
 ## Running with Docker (Recommended)
 
 The default Docker setup mirrors production and does not include hot-reloading. For a clean setup with migrations and admin bootstrap, run `./install.sh`.
+You can also run it non-interactively:
+
+```bash
+CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
+  ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
+  ./install.sh
+```
 
 ```bash
 docker compose up -d

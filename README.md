@@ -43,7 +43,13 @@ Prerequisites: Docker and Docker Compose installed.
     ```bash
     ./install.sh
     ```
-    This will build containers, run migrations, and prompt you to create the first admin.
+    This will build containers, run migrations, prompt for CORS/HTTPS, and create the first admin.
+    You can run it non-interactively:
+    ```bash
+    CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
+      ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
+      ./install.sh
+    ```
     *(Note: `./scripts/deploy.sh` is destructive: it hard-resets git and deletes volumes.)*
 
 4.  **Access the Application:**

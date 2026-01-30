@@ -28,6 +28,46 @@ if [ -z "$PYTHON_BIN" ]; then
   exit 1
 fi
 
+INTERACTIVE=true
+if [ ! -t 0 ]; then
+  INTERACTIVE=false
+fi
+
+prompt_default() {
+  local prompt="$1"
+  local default_value="$2"
+  local value=""
+
+  read -r -p "${prompt} [${default_value}]: " value
+  if [ -z "$value" ]; then
+    value="$default_value"
+  fi
+
+  printf '%s' "$value"
+}
+
+prompt_yes_no() {
+  local prompt="$1"
+  local default_value="$2"
+  local label="y/N"
+  local reply=""
+
+  if [ "$default_value" = "y" ]; then
+    label="Y/n"
+  fi
+
+  read -r -p "${prompt} [${label}]: " reply
+  if [ -z "$reply" ]; then
+    reply="$default_value"
+  fi
+
+  if [[ "$reply" =~ ^[Yy]$ ]]; then
+    printf '%s' "true"
+  else
+    printf '%s' "false"
+  fi
+}
+
 project_name="$(docker compose config --name 2>/dev/null || basename "$ROOT_DIR")"
 
 has_existing=false
@@ -150,11 +190,31 @@ cors_value="${CORS_ORIGIN:-$(get_env backend/.env CORS_ORIGIN)}"
 if [ -z "$cors_value" ]; then
   cors_value="http://localhost:5000"
 fi
+if [ "$INTERACTIVE" = true ] && [ -z "${CORS_ORIGIN:-}" ]; then
+  cors_value="$(prompt_default "Frontend origin(s) for CORS (comma-separated)" "$cors_value")"
+fi
 set_env backend/.env CORS_ORIGIN "$cors_value"
+
+install_https_value="${INSTALL_HTTPS:-}"
+if [ -z "$install_https_value" ] && [ "$INTERACTIVE" = true ]; then
+  install_https_value="$(prompt_yes_no "Is the site served over HTTPS?" "n")"
+fi
 
 cookie_secure_value="${COOKIE_SECURE:-$(get_env backend/.env COOKIE_SECURE)}"
 if [ -z "$cookie_secure_value" ]; then
-  cookie_secure_value="false"
+  if [ -n "$install_https_value" ]; then
+    if [ "$install_https_value" = "true" ]; then
+      cookie_secure_value="true"
+    else
+      cookie_secure_value="false"
+    fi
+  else
+    if [[ "$cors_value" == https://* ]] && [[ "$cors_value" != *"http://"* ]]; then
+      cookie_secure_value="true"
+    else
+      cookie_secure_value="false"
+    fi
+  fi
 fi
 set_env backend/.env COOKIE_SECURE "$cookie_secure_value"
 
@@ -184,7 +244,53 @@ done
 
 docker compose exec -T backend npx prisma migrate deploy
 
+admin_email="${ADMIN_EMAIL:-}"
+admin_password="${ADMIN_PASSWORD:-}"
+admin_username="${ADMIN_USERNAME:-admin}"
+admin_name="${ADMIN_NAME:-Admin}"
+
+if [ -z "$admin_email" ] && [ "$INTERACTIVE" = true ]; then
+  read -r -p "Admin email: " admin_email
+fi
+
+if [ "$INTERACTIVE" = true ] && [ -z "${ADMIN_USERNAME:-}" ]; then
+  admin_username="$(prompt_default "Admin username" "$admin_username")"
+fi
+
+if [ "$INTERACTIVE" = true ] && [ -z "${ADMIN_NAME:-}" ]; then
+  admin_name="$(prompt_default "Admin display name" "$admin_name")"
+fi
+
+if [ -z "$admin_password" ] && [ "$INTERACTIVE" = true ]; then
+  while true; do
+    read -r -s -p "Admin password (8+ chars): " admin_password
+    echo
+    if [ ${#admin_password} -lt 8 ]; then
+      echo "Password must be at least 8 characters." >&2
+      admin_password=""
+      continue
+    fi
+    read -r -s -p "Confirm admin password: " admin_password_confirm
+    echo
+    if [ "$admin_password" != "$admin_password_confirm" ]; then
+      echo "Passwords do not match." >&2
+      admin_password=""
+      continue
+    fi
+    break
+  done
+fi
+
+if [ -z "$admin_email" ] || [ -z "$admin_password" ]; then
+  echo "ADMIN_EMAIL and ADMIN_PASSWORD are required. Set env vars to run non-interactively." >&2
+  exit 1
+fi
+
 echo "Bootstrapping admin user..."
-./scripts/bootstrap-admin.sh
+ADMIN_EMAIL="$admin_email" \
+  ADMIN_PASSWORD="$admin_password" \
+  ADMIN_USERNAME="$admin_username" \
+  ADMIN_NAME="$admin_name" \
+  ./scripts/bootstrap-admin.sh
 
 echo "Install complete."
