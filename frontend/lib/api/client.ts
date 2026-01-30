@@ -150,24 +150,54 @@ export class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
   private refreshDisabled = false;
+  private refreshDisabledUntil: number | null = null;
   // No refreshToken stored in client anymore (HttpOnly Cookie)
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
     // Tokens managed in memory, initialized via refresh on app load
+    if (typeof window !== 'undefined') {
+      const stored = window.sessionStorage.getItem('refreshDisabledUntil');
+      if (stored) {
+        const until = Number(stored);
+        if (!Number.isNaN(until) && Date.now() < until) {
+          this.refreshDisabled = true;
+          this.refreshDisabledUntil = until;
+        } else {
+          window.sessionStorage.removeItem('refreshDisabledUntil');
+        }
+      }
+    }
   }
 
   private saveTokens(accessToken: string) {
     this.accessToken = accessToken;
-    this.refreshDisabled = false;
+    this.clearRefreshDisabled();
   }
 
   private clearTokens() {
     this.accessToken = null;
   }
 
-  private disableRefresh() {
+  private disableRefresh(seconds?: number) {
     this.refreshDisabled = true;
+    if (typeof window !== 'undefined') {
+      if (typeof seconds === 'number') {
+        const until = Date.now() + seconds * 1000;
+        this.refreshDisabledUntil = until;
+        window.sessionStorage.setItem('refreshDisabledUntil', String(until));
+      } else {
+        window.sessionStorage.removeItem('refreshDisabledUntil');
+      }
+    }
+  }
+
+  private clearRefreshDisabled() {
+    this.refreshDisabled = false;
+    this.refreshDisabledUntil = null;
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('refreshDisabledUntil');
+    }
   }
 
   public async request<T>(
@@ -259,6 +289,16 @@ export class ApiClient {
         });
 
         if (!response.ok) {
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('retry-after');
+            const retrySeconds = retryAfter ? Number(retryAfter) : 15 * 60;
+            if (!Number.isNaN(retrySeconds)) {
+              this.disableRefresh(retrySeconds);
+            } else {
+              this.disableRefresh();
+            }
+            throw new ApiError('RATE_LIMITED', 'Too many requests, try again later');
+          }
           // If 409 (Conflict), it means someone else refreshed it. 
           // We can assume success for this client instance context if needed, 
           // but technically we don't have the new access token in body.
