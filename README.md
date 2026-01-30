@@ -67,9 +67,15 @@ Prerequisites: Docker and Docker Compose installed.
 Use these after installation to confirm services are responding:
 
 ```bash
-curl -i http://localhost/api/v1/profile/public
-curl -i http://localhost/api/v1/health
-curl -i http://localhost/api/v1/papers/metrics
+./scripts/health-check.sh
+```
+
+You can also run it non-interactively:
+
+```bash
+API_BASE_URL=http://localhost/api/v1 \
+  ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
+  ./scripts/health-check.sh
 ```
 
 ## Security Checklist (Production)
