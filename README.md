@@ -62,6 +62,16 @@ Prerequisites: Docker and Docker Compose installed.
     *   **Frontend**: [http://localhost:5000](http://localhost:5000)
     *   **API**: [http://localhost:3001/api/v1](http://localhost:3001/api/v1)
 
+## Health Checks
+
+Use these after installation to confirm services are responding:
+
+```bash
+curl -i http://localhost/api/v1/profile/public
+curl -i http://localhost/api/v1/health
+curl -i http://localhost/api/v1/papers/metrics
+```
+
 ## Ports & Configuration
 
 By default, the application exposes the following ports on your host machine:
@@ -99,6 +109,12 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
 *   **CORS**: Browsers enforce strict same-origin policies. If your frontend port or host changes, the backend must allow it in `CORS_ORIGIN`.
 
 ## Troubleshooting
+
+**Common errors:**
+*   **`Paper not found` on `/papers/metrics`**: restart backend after pulling the latest changes.
+*   **`Not allowed by CORS`**: add the exact browser origin(s) to `CORS_ORIGIN` and restart backend.
+*   **`Session expired` loops**: set `COOKIE_SECURE=false` on HTTP, or use HTTPS.
+*   **`column ... does not exist`**: run `docker compose exec backend npx prisma migrate deploy`.
 
 **Stop and clean everything:**
 If you encounter weird database errors or want a fresh start:

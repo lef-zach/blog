@@ -40,6 +40,14 @@ Run Prisma inside the backend container:
 docker compose exec backend npx prisma migrate deploy
 ```
 
+## Health Checks
+
+```bash
+curl -i http://localhost/api/v1/profile/public
+curl -i http://localhost/api/v1/health
+curl -i http://localhost/api/v1/papers/metrics
+```
+
 ## Bootstrap an Admin User
 
 The UI relies on an admin user for public settings. Create one after migrations:
@@ -63,6 +71,12 @@ npx prisma studio
 It will connect to `localhost:5432` (since we expose that port in `docker-compose.yml`).
 
 ## Debugging
+
+### Common Errors
+*   **`Paper not found` on `/papers/metrics`**: restart backend after pulling the latest changes.
+*   **`Not allowed by CORS`**: add the exact browser origin(s) to `CORS_ORIGIN` and restart backend.
+*   **`Session expired` loops**: set `COOKIE_SECURE=false` on HTTP, or use HTTPS.
+*   **`column ... does not exist`**: run `docker compose exec backend npx prisma migrate deploy`.
 
 ### Auth Issues
 *   **"Session expired" constantly**: If you are using HTTP, set `COOKIE_SECURE=false` (or use HTTPS). Secure cookies are dropped over HTTP.
