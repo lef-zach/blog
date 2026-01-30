@@ -33,7 +33,13 @@ docker compose exec backend npx prisma migrate deploy
 The UI relies on an admin user for public settings. Create one after migrations:
 
 ```bash
-docker compose exec backend node -e "const { PrismaClient } = require('@prisma/client'); const bcrypt=require('bcrypt'); const prisma=new PrismaClient(); (async()=>{ const email='you@example.com'; const password='YOUR_PASSWORD'; const username='admin'; const existing=await prisma.user.findUnique({ where:{ email } }); if(existing){ console.log('Admin already exists:', existing.id); return; } const hash=await bcrypt.hash(password, 12); const user=await prisma.user.create({ data:{ email, username, password:hash, name:'Admin', role:'ADMIN' } }); console.log('Created admin:', user.id); })().catch(e=>{console.error(e); process.exit(1);}).finally(()=>prisma.$disconnect());"
+./scripts/bootstrap-admin.sh
+```
+
+You can also pass values non-interactively:
+
+```bash
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD ./scripts/bootstrap-admin.sh
 ```
 ```
 

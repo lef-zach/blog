@@ -48,7 +48,7 @@ Prerequisites: Docker and Docker Compose installed.
 4.  **Run Migrations and Bootstrap an Admin:**
     ```bash
     docker compose exec backend npx prisma migrate deploy
-    docker compose exec backend node -e "const { PrismaClient } = require('@prisma/client'); const bcrypt=require('bcrypt'); const prisma=new PrismaClient(); (async()=>{ const email='you@example.com'; const password='YOUR_PASSWORD'; const username='admin'; const existing=await prisma.user.findUnique({ where:{ email } }); if(existing){ console.log('Admin already exists:', existing.id); return; } const hash=await bcrypt.hash(password, 12); const user=await prisma.user.create({ data:{ email, username, password:hash, name:'Admin', role:'ADMIN' } }); console.log('Created admin:', user.id); })().catch(e=>{console.error(e); process.exit(1);}).finally(()=>prisma.$disconnect());"
+    ./scripts/bootstrap-admin.sh
     ```
 
 5.  **Access the Application:**
