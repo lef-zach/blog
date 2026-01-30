@@ -1,0 +1,51 @@
+# Dependencies
+**/node_modules
+**/npm-debug.log
+**/yarn-error.log
+**/pnpm-debug.log
+**/.npm
+**/.yarn
+
+# Git metadata
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+# Build artifacts (Frontend)
+frontend/.next
+frontend/out
+frontend/build
+frontend/.turbo
+.next
+out
+build
+dist
+
+# Build artifacts (Backend)
+backend/dist
+backend/coverage
+dist
+coverage
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# IDE and Editor files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Docker (exclude the ignore file itself to minimize clutter, though harmless)
+.dockerignore
+
+# Misc
+*.md
+!README.md
+scripts/
+!scripts/start.sh

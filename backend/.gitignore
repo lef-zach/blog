@@ -1,0 +1,13 @@
+
+node_modules
+dist
+coverage
+.env
+*.log
+scholar_dump.html
+debug_scholar.js
+create_test_article.js
+verify_sync.js
+temp_register.js
+verify_full_system.js
+verify_login.js

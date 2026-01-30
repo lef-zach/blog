@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: blog-postgres
+    environment:
+      POSTGRES_USER: blog_app
+      POSTGRES_PASSWORD: blog_password
+      POSTGRES_DB: blog_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - blog-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    command: redis-server --requirepass redis_password
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - blog-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: blog-backend
+    env_file:
+      - backend/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blog_app:blog_password@postgres:5432/blog_production
+      REDIS_URL: redis://:redis_password@redis:6379
+      JWT_SECRET: your-jwt-secret-key
+      JWT_REFRESH_SECRET: your-jwt-refresh-secret-key
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://blog-frontend:3000,http://localhost,http://localhost:5000
+      PORT: 3001
+      GOOGLE_SCHOLAR_USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3001:3001"
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+    container_name: blog-frontend
+    env_file:
+      - frontend/.env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+    depends_on:
+      - backend
+    ports:
+      - "5000:5000"
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: blog-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-available/blog.conf:/etc/nginx/conf.d/blog.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  blog-network:
+    driver: bridge

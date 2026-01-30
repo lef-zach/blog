@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String?   @unique
+  username      String?   @unique
+  password      String
+  name          String?
+  role          Role      @default(AUTHOR)
+  bio           String?
+  avatar        String?
+  publicEmail   String?
+  socialLinks   Json?
+  siteSettings  Json?
+  scholarUrl    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  articles      Article[]
+  papers        Paper[]
+  refreshTokens RefreshToken[]
+}
+
+model Article {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String    @unique
+  content         String    @db.Text
+  excerpt         String?
+  featuredImage   String?
+  status          ArticleStatus @default(DRAFT)
+  visibility      Visibility @default(PUBLIC)
+  password        String?
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  readingTime     Int       @default(0)
+  wordCount       Int       @default(0)
+  views           Int       @default(0)
+  metaDescription String?
+  metaKeywords    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id])
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  tags            Tag[]
+  versions        ArticleVersion[]
+
+  @@index([slug])
+  @@index([publishedAt])
+  @@index([authorId])
+}
+
+model ArticleVersion {
+  id        String   @id @default(uuid())
+  articleId String
+  version   Int
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model Paper {
+  id        String      @id @default(uuid())
+  title     String
+  authors   String
+  venue     String?
+  year      Int
+  citations  Int         @default(0)
+  abstract  String?     @db.Text
+  doi       String?     @unique
+  url       String?     // Added link to paper
+  type      PaperType   @default(JOURNAL)
+  pdfUrl    String?
+  bibtex    String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([doi])
+}
+
+model Subscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+enum Role {
+  PUBLIC
+  AUTHOR
+  ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  PASSWORD
+}
+
+enum PaperType {
+  JOURNAL
+  CONFERENCE
+  PREPRINT
+  THESIS
+  BOOK
+}
