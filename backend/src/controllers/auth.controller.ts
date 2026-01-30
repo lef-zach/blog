@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import authService from '../services/auth.service';
 import { registerSchema, loginSchema, refreshTokenSchema } from '../validators/auth.validator';
 import { AuthRequest } from '../middleware/auth';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { authLimiter } from '../middleware/rateLimit';
 import { logger } from '../utils/logger';
 
@@ -121,6 +121,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
     }
 
     res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh' });
+    res.clearCookie('accessToken', { path: '/' });
     res.json({ data: { message: 'Logged out successfully' } });
   } catch (error) {
     next(error);
@@ -154,7 +155,7 @@ export const updatePassword = async (req: AuthRequest, res: Response, next: Next
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', refresh);
-router.post('/logout', authenticate, logout);
+router.post('/logout', optionalAuthenticate, logout);
 router.get('/me', authenticate, getMe);
 router.post('/update-password', authenticate, updatePassword); // NEW ROUTE
 

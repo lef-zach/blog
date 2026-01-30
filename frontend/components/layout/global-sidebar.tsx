@@ -46,8 +46,7 @@ export function GlobalSidebar() {
     }, []);
 
     if (!mounted) return null;
-    const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
-    if (!hasToken && !user) return null;
+    if (!user) return null;
 
     // Check if user has ANY role that matches at least one sidebar item?
     // For now, if logged in, show sidebar. Items will filter themselves.

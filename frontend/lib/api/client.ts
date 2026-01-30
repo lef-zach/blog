@@ -231,12 +231,14 @@ export class ApiClient {
 
     if (!response.ok) {
       if (response.status === 401) {
+        const isAuthMe = endpoint.includes('/auth/me');
+        const isAuthLogout = endpoint.includes('/auth/logout');
         // If 401 and we have an accessToken, it might be expired. Try refresh.
         // Even if we don't have accessToken, we might have a valid cookie?
         // Let's try refresh once.
         try {
           // Avoid infinite loop if refresh itself fails
-          if (endpoint.includes('/auth/refresh') || this.refreshDisabled) {
+          if (endpoint.includes('/auth/refresh') || isAuthMe || isAuthLogout || this.refreshDisabled) {
             throw new Error('Refresh failed');
           }
 
@@ -247,7 +249,7 @@ export class ApiClient {
         } catch (error) {
           this.clearTokens();
           this.disableRefresh();
-          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          if (!isAuthMe && !isAuthLogout && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
           throw new ApiError('UNAUTHORIZED', 'Session expired');
