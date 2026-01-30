@@ -50,7 +50,12 @@ In production, do not expose database or Redis ports.
 - Redis `6379`: keep internal only
 - Expose only Nginx (80/443). Backend/frontend should stay internal.
 
-If you need local access for troubleshooting, use a separate `docker-compose.override.yml` and do not commit it.
+If you need to troubleshoot, exec into the containers instead of opening host ports:
+
+```bash
+docker compose exec postgres psql -U blog_app -d blog_production
+docker compose exec redis redis-cli -a redis_password
+```
 
 ## CORS on LAN / VPS
 

@@ -77,6 +77,7 @@ curl -i http://localhost/api/v1/papers/metrics
 - HTTPS enabled and `COOKIE_SECURE=true`
 - Strong `JWT_SECRET` and `JWT_REFRESH_SECRET` (rotate if leaked)
 - Only 80/443 exposed; Postgres/Redis/backends stay internal
+- Use `docker compose exec` for database/redis access (no host ports)
 - CORS allowlist includes only your real domain
 - Admin registration disabled after first setup
 

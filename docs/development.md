@@ -21,7 +21,12 @@ If you already configured the environment and just want to start services:
 docker compose up -d
 ```
 
-If you need direct access to Postgres/Redis locally, add a non-committed `docker-compose.override.yml` instead of exposing ports in `docker-compose.yml`.
+If you need database or Redis access, run the clients inside the containers:
+
+```bash
+docker compose exec postgres psql -U blog_app -d blog_production
+docker compose exec redis redis-cli -a redis_password
+```
 
 ## Rebuilding Images
 
