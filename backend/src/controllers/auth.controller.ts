@@ -45,6 +45,14 @@ const COOKIE_OPTIONS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+const ACCESS_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: COOKIE_SECURE,
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 15 * 60 * 1000,
+};
+
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = loginSchema.parse(req.body);
@@ -57,8 +65,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       correlationId: req.id,
     });
 
-    // Set HttpOnly Cookie
+    // Set HttpOnly Cookies
     res.cookie('refresh_token', result.refreshToken, COOKIE_OPTIONS);
+    res.cookie('accessToken', result.accessToken, ACCESS_COOKIE_OPTIONS);
 
     // Return User & Access Token (Remove Refresh Token from body)
     res.json({
@@ -84,8 +93,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
     const result = await authService.refresh(refreshToken);
 
-    // Rotate Cookie
+    // Rotate Cookies
     res.cookie('refresh_token', result.refreshToken, COOKIE_OPTIONS);
+    res.cookie('accessToken', result.accessToken, ACCESS_COOKIE_OPTIONS);
 
     res.json({
       data: {
@@ -95,6 +105,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
   } catch (error) {
     // Clear cookie on error
     res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh' });
+    res.clearCookie('accessToken', { path: '/' });
     next(error);
   }
 };
