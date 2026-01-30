@@ -8,11 +8,17 @@ We welcome contributions!
 2.  **Clone** your fork.
 3.  **Start** the environment using Docker:
     ```bash
-    docker compose up
+    ./install.sh
+    ```
+    If the project is already configured:
+    ```bash
+    docker compose up -d
     ```
 4.  Make your changes.
-    *   **Backend**: Edit `backend/src`. changes will auto-restart the server.
-    *   **Frontend**: Edit `frontend/`. Next.js will hot-reload.
+    *   Rebuild containers after dependency or code changes:
+        ```bash
+        docker compose up -d --build
+        ```
 5.  **Test** your changes.
 6.  **Push** to your fork and submit a Pull Request.
 

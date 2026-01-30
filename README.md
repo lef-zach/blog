@@ -47,7 +47,7 @@ Prerequisites: Docker and Docker Compose installed.
     It also disables the default nginx server block to avoid conflicting `server_name` warnings.
     You can run it non-interactively:
     ```bash
-    CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
+    CORS_ORIGIN=http://xxx.xxx.xxx.xxx:5000 INSTALL_HTTPS=false \
       ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
       ./install.sh
 

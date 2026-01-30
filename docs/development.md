@@ -8,12 +8,14 @@ The default Docker setup mirrors production and does not include hot-reloading. 
 You can also run it non-interactively:
 
 ```bash
-CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
+CORS_ORIGIN=http://xxx.xxx.xxx.xxx:5000 INSTALL_HTTPS=false \
   ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
   ./install.sh
 ```
 
 For HTTPS testing, set `INSTALL_HTTPS=true`. The installer can generate a self-signed certificate by default.
+
+If you already configured the environment and just want to start services:
 
 ```bash
 docker compose up -d
@@ -36,6 +38,7 @@ Run Prisma inside the backend container:
 
 ```bash
 docker compose exec backend npx prisma migrate deploy
+```
 
 ## Bootstrap an Admin User
 
@@ -49,7 +52,6 @@ You can also pass values non-interactively:
 
 ```bash
 ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD ./scripts/bootstrap-admin.sh
-```
 ```
 
 **Viewing Data (Prisma Studio):**

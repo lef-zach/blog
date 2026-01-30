@@ -191,7 +191,7 @@ if [ -z "$cors_value" ]; then
   cors_value="http://localhost:5000"
 fi
 if [ "$INTERACTIVE" = true ] && [ -z "${CORS_ORIGIN:-}" ]; then
-  cors_value="$(prompt_default "Frontend origin(s) for CORS (comma-separated)" "$cors_value")"
+  cors_value="$(prompt_default "Frontend origin(s) for CORS (comma-separated, e.g. http://xxx.xxx.xxx.xxx:5000)" "$cors_value")"
 fi
 set_env backend/.env CORS_ORIGIN "$cors_value"
 
