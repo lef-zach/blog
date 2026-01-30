@@ -32,10 +32,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+const COOKIE_SECURE = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === 'true'
+  : process.env.NODE_ENV === 'production';
+
 // Cookie Options
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: COOKIE_SECURE,
   sameSite: 'lax' as const,
   path: '/api/v1/auth/refresh', // Restricted path
   maxAge: 7 * 24 * 60 * 60 * 1000,
