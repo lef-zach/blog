@@ -218,6 +218,88 @@ if [ -z "$cookie_secure_value" ]; then
 fi
 set_env backend/.env COOKIE_SECURE "$cookie_secure_value"
 
+if [ "$install_https_value" = "true" ]; then
+  default_domain="localhost"
+  first_origin="${cors_value%%,*}"
+  if [ -n "$first_origin" ]; then
+    first_origin="${first_origin#http://}"
+    first_origin="${first_origin#https://}"
+    first_origin="${first_origin%%/*}"
+    if [ -n "$first_origin" ]; then
+      default_domain="$first_origin"
+    fi
+  fi
+
+  https_domain="${HTTPS_DOMAIN:-$default_domain}"
+  if [ "$INTERACTIVE" = true ] && [ -z "${HTTPS_DOMAIN:-}" ]; then
+    https_domain="$(prompt_default "HTTPS domain" "$https_domain")"
+  fi
+
+  https_mode="${HTTPS_CERT_MODE:-}"
+  if [ "$INTERACTIVE" = true ] && [ -z "$https_mode" ]; then
+    https_mode="$(prompt_default "TLS cert mode (self-signed|existing)" "self-signed")"
+  fi
+  if [ -z "$https_mode" ]; then
+    https_mode="self-signed"
+  fi
+
+  mkdir -p nginx/certs
+
+  if [ "$https_mode" = "self-signed" ]; then
+    if ! command -v openssl >/dev/null 2>&1; then
+      echo "openssl is required to generate a self-signed certificate." >&2
+      exit 1
+    fi
+
+    openssl req -x509 -nodes -newkey rsa:2048 \
+      -days 365 \
+      -keyout nginx/certs/server.key \
+      -out nginx/certs/server.crt \
+      -subj "/CN=${https_domain}" >/dev/null 2>&1
+  else
+    https_cert_path="${HTTPS_CERT_PATH:-}"
+    https_key_path="${HTTPS_KEY_PATH:-}"
+
+    if [ "$INTERACTIVE" = true ] && [ -z "$https_cert_path" ]; then
+      read -r -p "Path to TLS certificate (.crt/.pem): " https_cert_path
+    fi
+    if [ "$INTERACTIVE" = true ] && [ -z "$https_key_path" ]; then
+      read -r -p "Path to TLS private key (.key): " https_key_path
+    fi
+
+    if [ -z "$https_cert_path" ] || [ -z "$https_key_path" ]; then
+      echo "HTTPS_CERT_PATH and HTTPS_KEY_PATH are required for existing certificates." >&2
+      exit 1
+    fi
+
+    if [ ! -f "$https_cert_path" ] || [ ! -f "$https_key_path" ]; then
+      echo "Certificate files not found." >&2
+      exit 1
+    fi
+
+    cp "$https_cert_path" nginx/certs/server.crt
+    cp "$https_key_path" nginx/certs/server.key
+  fi
+
+  if [ ! -f nginx/sites-available/blog.https.conf ]; then
+    echo "Missing nginx/sites-available/blog.https.conf" >&2
+    exit 1
+  fi
+
+  "$PYTHON_BIN" - "$https_domain" <<'PY'
+from pathlib import Path
+import sys
+
+domain = sys.argv[1]
+template = Path("nginx/sites-available/blog.https.conf").read_text()
+Path("nginx/sites-available/blog.conf").write_text(template.replace("__SERVER_NAME__", domain))
+PY
+else
+  if [ -f nginx/sites-available/blog.http.conf ]; then
+    cp nginx/sites-available/blog.http.conf nginx/sites-available/blog.conf
+  fi
+fi
+
 jwt_value="${JWT_SECRET:-$(get_env backend/.env JWT_SECRET)}"
 if is_placeholder "$jwt_value"; then
   jwt_value="$(gen_secret)"

@@ -43,10 +43,15 @@ Prerequisites: Docker and Docker Compose installed.
     ```bash
     ./install.sh
     ```
-    This will build containers, run migrations, prompt for CORS/HTTPS, and create the first admin.
+    This will build containers, run migrations, optionally configure HTTPS, and create the first admin.
     You can run it non-interactively:
     ```bash
     CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
+      ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
+      ./install.sh
+
+    # HTTPS with self-signed cert
+    CORS_ORIGIN=https://your-domain.com INSTALL_HTTPS=true \
       ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YOUR_PASSWORD \
       ./install.sh
     ```

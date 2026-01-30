@@ -13,6 +13,8 @@ CORS_ORIGIN=http://localhost:5000 INSTALL_HTTPS=false \
   ./install.sh
 ```
 
+For HTTPS testing, set `INSTALL_HTTPS=true`. The installer can generate a self-signed certificate by default.
+
 ```bash
 docker compose up -d
 ```

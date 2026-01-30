@@ -76,6 +76,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/sites-available/blog.conf:/etc/nginx/conf.d/blog.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - frontend
       - backend

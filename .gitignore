@@ -27,6 +27,7 @@ yarn-error.log*
 
 # Docker
 .docker_temp/
+nginx/certs/
 
 # IDE
 .vscode/

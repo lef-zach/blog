@@ -53,3 +53,7 @@ In production, do not expose database or Redis ports.
 ## CORS on LAN / VPS
 
 If you see `Not allowed by CORS` errors, add the exact browser origin(s) to `CORS_ORIGIN` and restart the backend.
+
+## Local HTTPS (Self-Signed)
+
+`install.sh` can generate a self-signed certificate for local HTTPS testing. Browsers will show a warning until the cert is trusted.
