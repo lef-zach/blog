@@ -12,6 +12,7 @@ This project implements a secure, scalable blogging engine designed for performa
 *   **Performance**: Server-Side Rendering (SSR) with Next.js and Redis caching for high-load endpoints.
 *   **Security**: Hardened with Helmet, strict CORS, rate limiting, and input sanitization.
 *   **Observability**: Structured JSON logging and request correlation tracing.
+*   **SEO Settings**: Global meta title/description (and optional OG image) from Admin settings.
 
 ## Architecture
 

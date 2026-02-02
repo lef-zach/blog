@@ -10,9 +10,71 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
-export const metadata: Metadata = {
-  title: 'Tech Blog - Academic & Technical Writing',
-  description: 'A self-hosted blog platform for technical writing and academic publications',
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+const INTERNAL_API_BASE = API_BASE_URL.startsWith('http')
+  ? API_BASE_URL
+  : `http://backend:3001${API_BASE_URL}`
+
+type PublicSettings = {
+  siteName?: string
+  siteDescription?: string
+  siteUrl?: string
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+    ogImage?: string
+  }
+}
+
+async function fetchPublicSettings(): Promise<PublicSettings | null> {
+  try {
+    const response = await fetch(`${INTERNAL_API_BASE}/profile/public`, {
+      next: { revalidate: 300 },
+    })
+    if (!response.ok) return null
+    const payload = await response.json()
+    return payload?.data || null
+  } catch {
+    return null
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchPublicSettings()
+  const siteName = settings?.siteName || 'Modern Blog'
+  const siteDescription = settings?.siteDescription || 'A modern blog platform.'
+  const metaTitle = settings?.seo?.metaTitle || siteName
+  const metaDescription = settings?.seo?.metaDescription || siteDescription
+  const siteUrl = settings?.siteUrl || 'http://localhost'
+  const ogImage = settings?.seo?.ogImage
+
+  let metadataBase: URL | undefined
+  try {
+    metadataBase = new URL(siteUrl)
+  } catch {
+    metadataBase = undefined
+  }
+
+  return {
+    metadataBase,
+    title: metaTitle,
+    description: metaDescription,
+    alternates: metadataBase ? { canonical: metadataBase } : undefined,
+    openGraph: {
+      title: metaTitle,
+      description: metaDescription,
+      url: siteUrl,
+      siteName,
+      type: 'website',
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title: metaTitle,
+      description: metaDescription,
+      images: ogImage ? [ogImage] : undefined,
+    },
+  }
 }
 
 export default function RootLayout({
