@@ -38,3 +38,6 @@ nginx/certs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local transcripts
+blog_30/
