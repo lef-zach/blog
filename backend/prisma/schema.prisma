@@ -34,6 +34,8 @@ model Article {
   content         String    @db.Text
   excerpt         String?
   featuredImage   String?
+  featuredImageLayout FeaturedImageLayout @default(BANNER)
+  featuredImageSize   FeaturedImageSize @default(M)
   status          ArticleStatus @default(DRAFT)
   visibility      Visibility @default(PUBLIC)
   password        String?
@@ -155,4 +157,15 @@ enum PaperType {
   PREPRINT
   THESIS
   BOOK
+}
+
+enum FeaturedImageLayout {
+  BANNER
+  PORTRAIT
+}
+
+enum FeaturedImageSize {
+  S
+  M
+  B
 }

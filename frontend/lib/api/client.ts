@@ -40,6 +40,8 @@ const articleSchema = z.object({
   tags: z.array(z.union([z.string(), z.object({ name: z.string() })])), // Can be strings or objects
   category: z.union([z.string(), z.object({ name: z.string() })]).nullable(), // Can be string or object
   featuredImage: z.string().nullable(),
+  featuredImageLayout: z.enum(['BANNER', 'PORTRAIT']).optional().nullable(),
+  featuredImageSize: z.enum(['S', 'M', 'B']).optional().nullable(),
   metaDescription: z.string().nullable(),
   views: z.number().optional(),
   author: z.object({

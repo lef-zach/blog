@@ -8,15 +8,25 @@ type Props = { html: string };
 const ALLOWED_TAGS = [
     "p", "br", "strong", "em", "u", "s", "a",
     "h1", "h2", "h3", "h4", "h5", "h6",
-    "ul", "ol", "li", "blockquote", "pre", "code", "hr"
+    "ul", "ol", "li", "blockquote", "pre", "code", "hr", "img"
 ];
 
 // keep attrs tight. Avoid style.
-const ALLOWED_ATTR = ["href", "title", "target", "rel", "data-card"];
+const ALLOWED_ATTR = ["href", "title", "target", "rel", "data-card", "src", "alt", "width", "height", "data-size"];
 
 function isSafeHref(href: string) {
     // allow only http/https/mailto/tel
     return /^(https?:|mailto:|tel:)/i.test(href);
+}
+
+function isSafeImageSrc(src: string) {
+    return /^(https?:)/i.test(src) || /^data:image\//i.test(src);
+}
+
+function normalizeImageSize(value: string | null) {
+    const size = (value || '').toUpperCase();
+    if (size === 'S' || size === 'M' || size === 'B') return size;
+    return 'M';
 }
 
 export default function PostContentBoxes({ html }: Props) {
@@ -88,6 +98,17 @@ export default function PostContentBoxes({ html }: Props) {
                     }
                 }
 
+                if (el.tagName === "IMG") {
+                    const src = el.getAttribute("src") || "";
+                    if (!src || !isSafeImageSrc(src)) {
+                        el.removeAttribute("src");
+                    } else {
+                        const size = normalizeImageSize(el.getAttribute("data-size"));
+                        el.setAttribute("data-size", size);
+                        el.classList.add("content-image", `content-image--${size.toLowerCase()}`);
+                    }
+                }
+
                 el.querySelectorAll?.("a").forEach((a) => {
                     const href = a.getAttribute("href") || "";
                     if (!href || !isSafeHref(href)) {
@@ -96,6 +117,17 @@ export default function PostContentBoxes({ html }: Props) {
                         a.setAttribute("target", "_blank");
                         a.setAttribute("rel", "noopener noreferrer nofollow");
                     }
+                });
+
+                el.querySelectorAll?.("img").forEach((img) => {
+                    const src = img.getAttribute("src") || "";
+                    if (!src || !isSafeImageSrc(src)) {
+                        img.removeAttribute("src");
+                        return;
+                    }
+                    const size = normalizeImageSize(img.getAttribute("data-size"));
+                    img.setAttribute("data-size", size);
+                    img.classList.add("content-image", `content-image--${size.toLowerCase()}`);
                 });
 
                 // Add the element HTML to the buffer

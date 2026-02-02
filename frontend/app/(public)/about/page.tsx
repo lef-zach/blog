@@ -40,11 +40,32 @@ export default function AboutPage() {
   }
 
   if (article) {
+    const featuredLayout = (article.featuredImageLayout || 'BANNER').toLowerCase();
+    const featuredSize = (article.featuredImageSize || 'M').toLowerCase();
     return (
       <div className="container py-12">
         <article className="mx-auto max-w-4xl">
-          <h1 className="mb-8 text-4xl font-bold">{article.title}</h1>
-          <PostContentBoxes html={article.content} />
+          {article.featuredImage && featuredLayout === 'portrait' ? (
+            <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-start">
+              <div className={`featured-image featured-image--portrait featured-image--${featuredSize} flex-shrink-0`}>
+                <img src={article.featuredImage} alt={`${article.title} featured`} />
+              </div>
+              <div className="flex-1">
+                <h1 className="mb-8 text-4xl font-bold">{article.title}</h1>
+                <PostContentBoxes html={article.content} />
+              </div>
+            </div>
+          ) : (
+            <>
+              {article.featuredImage && (
+                <div className={`mb-8 featured-image featured-image--banner featured-image--${featuredSize}`}>
+                  <img src={article.featuredImage} alt={`${article.title} featured`} />
+                </div>
+              )}
+              <h1 className="mb-8 text-4xl font-bold">{article.title}</h1>
+              <PostContentBoxes html={article.content} />
+            </>
+          )}
         </article>
       </div>
     );

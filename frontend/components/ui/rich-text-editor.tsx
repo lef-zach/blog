@@ -2,7 +2,7 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import 'react-quill/dist/quill.snow.css';
 
 interface RichTextEditorProps {
@@ -15,6 +15,8 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
   const quillRef = useRef<any>(null);
   const toolbarId = useMemo(() => `toolbar-${Math.random().toString(36).substring(7)}`, []);
+  const [inlineImageSize, setInlineImageSize] = useState('M');
+  const [imageNotice, setImageNotice] = useState('');
 
   // Dynamically import ReactQuill to avoid SSR issues
   const ReactQuill = useMemo(
@@ -60,6 +62,30 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         quill.setSelection(range.index + 1, 'user');
       }
     }
+  };
+
+  const applyImageSize = (size: string) => {
+    setInlineImageSize(size);
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    const range = quill.getSelection(true);
+    if (!range) {
+      setImageNotice('Select an image first to resize it.');
+      return;
+    }
+
+    const [leaf] = quill.getLeaf(range.index);
+    const node = leaf?.domNode as HTMLElement | undefined;
+    if (!node || node.tagName !== 'IMG') {
+      setImageNotice('Select an image first to resize it.');
+      return;
+    }
+
+    setImageNotice('');
+    node.setAttribute('data-size', size);
+    node.classList.remove('content-image--s', 'content-image--m', 'content-image--b');
+    node.classList.add('content-image', `content-image--${size.toLowerCase()}`);
   };
 
   // The insertDivider function is no longer needed as 'cardseparator' replaces its functionality.
@@ -164,6 +190,18 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           <button className="ql-link" />
           <button className="ql-image" />
         </span>
+        <span className="ql-formats border-l pl-2 ml-2 flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Image Size</label>
+          <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+            value={inlineImageSize}
+            onChange={(e) => applyImageSize(e.target.value)}
+          >
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="B">B</option>
+          </select>
+        </span>
         <span className="ql-formats">
           <button className="ql-clean" />
         </span>
@@ -175,6 +213,9 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         </span>
       </div>
 
+      {imageNotice && (
+        <div className="px-4 py-2 text-xs text-muted-foreground">{imageNotice}</div>
+      )}
       <div className="flex-grow min-h-[500px] h-full">
         <ReactQuill
           forwardedRef={quillRef}

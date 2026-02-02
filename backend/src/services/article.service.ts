@@ -22,6 +22,8 @@ export class ArticleService {
         excerpt: data.excerpt || this.generateExcerpt(data.content),
         content: data.content,
         featuredImage: data.featuredImage,
+        featuredImageLayout: data.featuredImageLayout,
+        featuredImageSize: data.featuredImageSize,
         status: data.status || 'DRAFT',
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         visibility: data.visibility || 'PUBLIC',

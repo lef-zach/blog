@@ -1,10 +1,23 @@
 import { z } from 'zod';
 
+const imageSourceSchema = z.string().optional().nullable().refine((value) => {
+  if (!value) return true;
+  if (value.startsWith('data:image/')) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}, { message: 'Invalid image source' });
+
 export const createArticleSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   content: z.string().min(1, 'Content is required'),
   excerpt: z.string().optional(),
-  featuredImage: z.string().url().optional().nullable(),
+  featuredImage: imageSourceSchema,
+  featuredImageLayout: z.enum(['BANNER', 'PORTRAIT']).optional(),
+  featuredImageSize: z.enum(['S', 'M', 'B']).optional(),
   categoryId: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   metaDescription: z.string().optional(),
@@ -16,7 +29,9 @@ export const updateArticleSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   content: z.string().min(1, 'Content is required').optional(),
   excerpt: z.string().optional(),
-  featuredImage: z.string().url().optional().nullable(),
+  featuredImage: imageSourceSchema,
+  featuredImageLayout: z.enum(['BANNER', 'PORTRAIT']).optional(),
+  featuredImageSize: z.enum(['S', 'M', 'B']).optional(),
   status: z.enum(['DRAFT', 'REVIEW', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']).optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
   visibility: z.enum(['PUBLIC', 'PRIVATE', 'PASSWORD']).optional(),

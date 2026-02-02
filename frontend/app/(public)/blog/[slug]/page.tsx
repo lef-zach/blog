@@ -16,6 +16,9 @@ interface Article {
   content: string;
   publishedAt: string;
   readingTime: number;
+  featuredImage?: string | null;
+  featuredImageLayout?: 'BANNER' | 'PORTRAIT' | null;
+  featuredImageSize?: 'S' | 'M' | 'B' | null;
   author: {
     name: string;
     bio?: string;
@@ -74,6 +77,9 @@ export default function ArticlePage() {
     );
   }
 
+  const featuredLayout = (article.featuredImageLayout || 'BANNER').toLowerCase();
+  const featuredSize = (article.featuredImageSize || 'M').toLowerCase();
+
   return (
     <div className="container py-12">
       <div className="mx-auto max-w-4xl">
@@ -85,46 +91,99 @@ export default function ArticlePage() {
         </Button>
 
         <article>
-          <header className="mb-8">
-            <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                {formatDate(article.publishedAt || new Date().toISOString())}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {formatReadingTime(article.readingTime || 5)}
-              </span>
-            </div>
-            <h1 className="mb-4 text-4xl font-bold">{article.title}</h1>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  {article.author?.name?.charAt(0) || 'A'}
-                </div>
-                <div>
-                  <p className="font-medium">{article.author?.name || 'Unknown Author'}</p>
-                  <p className="text-sm text-muted-foreground">{article.author?.bio}</p>
-                </div>
+          {article.featuredImage && featuredLayout === 'portrait' ? (
+            <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-start">
+              <div className={`featured-image featured-image--portrait featured-image--${featuredSize} flex-shrink-0`}>
+                <img src={article.featuredImage} alt={`${article.title} featured`} />
               </div>
-              <Button variant="outline" size="icon" onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: article.title,
-                    text: article.excerpt || `Check out this article: ${article.title}`,
-                    url: window.location.href,
-                  }).catch(console.error);
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  // You might want a toast here, but for now simple fallback
-                  alert('Link copied to clipboard!');
-                }
-              }}>
-                <Share2 className="h-4 w-4" />
-                <span className="sr-only">Share</span>
-              </Button>
+              <header className="flex-1">
+                <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(article.publishedAt || new Date().toISOString())}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {formatReadingTime(article.readingTime || 5)}
+                  </span>
+                </div>
+                <h1 className="mb-4 text-4xl font-bold">{article.title}</h1>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      {article.author?.name?.charAt(0) || 'A'}
+                    </div>
+                    <div>
+                      <p className="font-medium">{article.author?.name || 'Unknown Author'}</p>
+                      <p className="text-sm text-muted-foreground">{article.author?.bio}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: article.title,
+                        text: article.excerpt || `Check out this article: ${article.title}`,
+                        url: window.location.href,
+                      }).catch(console.error);
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    }
+                  }}>
+                    <Share2 className="h-4 w-4" />
+                    <span className="sr-only">Share</span>
+                  </Button>
+                </div>
+              </header>
             </div>
-          </header>
+          ) : (
+            <>
+              {article.featuredImage && (
+                <div className={`mb-8 featured-image featured-image--banner featured-image--${featuredSize}`}>
+                  <img src={article.featuredImage} alt={`${article.title} featured`} />
+                </div>
+              )}
+              <header className="mb-8">
+                <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(article.publishedAt || new Date().toISOString())}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {formatReadingTime(article.readingTime || 5)}
+                  </span>
+                </div>
+                <h1 className="mb-4 text-4xl font-bold">{article.title}</h1>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      {article.author?.name?.charAt(0) || 'A'}
+                    </div>
+                    <div>
+                      <p className="font-medium">{article.author?.name || 'Unknown Author'}</p>
+                      <p className="text-sm text-muted-foreground">{article.author?.bio}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: article.title,
+                        text: article.excerpt || `Check out this article: ${article.title}`,
+                        url: window.location.href,
+                      }).catch(console.error);
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    }
+                  }}>
+                    <Share2 className="h-4 w-4" />
+                    <span className="sr-only">Share</span>
+                  </Button>
+                </div>
+              </header>
+            </>
+          )}
 
 
 

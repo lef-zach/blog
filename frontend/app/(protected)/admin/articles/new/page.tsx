@@ -35,6 +35,8 @@ interface Article {
   tags: string[];
   category?: string;
   featuredImage?: string;
+  featuredImageLayout?: 'BANNER' | 'PORTRAIT';
+  featuredImageSize?: 'S' | 'M' | 'B';
   metaDescription?: string;
 }
 
@@ -50,6 +52,8 @@ export default function ArticleEditorPage() {
     content: '',
     status: 'DRAFT',
     tags: [],
+    featuredImageLayout: 'BANNER',
+    featuredImageSize: 'M',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -430,6 +434,43 @@ export default function ArticleEditorPage() {
                   }
                   placeholder="https://example.com/image.jpg"
                 />
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor="featuredImageLayout">Layout</Label>
+                    <select
+                      id="featuredImageLayout"
+                      className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      value={article.featuredImageLayout || 'BANNER'}
+                      onChange={(e) =>
+                        setArticle((prev) => ({
+                          ...prev,
+                          featuredImageLayout: e.target.value as 'BANNER' | 'PORTRAIT',
+                        }))
+                      }
+                    >
+                      <option value="BANNER">Banner</option>
+                      <option value="PORTRAIT">Left Portrait</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="featuredImageSize">Size</Label>
+                    <select
+                      id="featuredImageSize"
+                      className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      value={article.featuredImageSize || 'M'}
+                      onChange={(e) =>
+                        setArticle((prev) => ({
+                          ...prev,
+                          featuredImageSize: e.target.value as 'S' | 'M' | 'B',
+                        }))
+                      }
+                    >
+                      <option value="S">Small</option>
+                      <option value="M">Medium</option>
+                      <option value="B">Big</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="mt-4 space-y-2">
                   <Label htmlFor="featuredImageUpload">Upload Image</Label>
                   <Input
@@ -445,12 +486,8 @@ export default function ArticleEditorPage() {
                     <p className="text-xs text-red-500">{featuredImageError}</p>
                   )}
                   {article.featuredImage && (
-                    <div className="mt-3 overflow-hidden rounded-md border border-input">
-                      <img
-                        src={article.featuredImage}
-                        alt="Featured preview"
-                        className="h-40 w-full object-cover"
-                      />
+                    <div className={`mt-3 featured-image featured-image--${(article.featuredImageLayout || 'BANNER').toLowerCase()} featured-image--${(article.featuredImageSize || 'M').toLowerCase()}`}>
+                      <img src={article.featuredImage} alt="Featured preview" />
                     </div>
                   )}
                 </div>
