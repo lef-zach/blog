@@ -89,9 +89,9 @@ export default function ArticleEditorPage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      setFeaturedImageError('Image must be smaller than 5MB.');
+      setFeaturedImageError('Image must be smaller than 10MB.');
       return;
     }
 
