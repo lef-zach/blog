@@ -83,8 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [pathname]);
 
-    if (isLoading) {
-        // Render nothing or a loading spinner while bootstrapping auth
+    const isProtectedRoute = pathname.startsWith('/admin');
+
+    if (isLoading && isProtectedRoute) {
         return null;
     }
 

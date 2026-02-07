@@ -1,4 +1,18 @@
 /** @type {import('next').NextConfig} */
+const isProduction = process.env.NODE_ENV === 'production'
+const connectSrc = isProduction
+  ? "connect-src 'self'"
+  : "connect-src 'self' http://localhost:3001"
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  connectSrc,
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' blob: data: https:",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+].join('; ')
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
@@ -36,9 +50,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            // Simple CSP for now to allow Next.js logic + Images + standard resources.
-            // unsafe-inline/eval are often needed for Next.js dev/prod unless strict nonces are used (complex).
-            value: "default-src 'self'; connect-src 'self' http://localhost:3001; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; object-src 'none'; frame-ancestors 'none';"
+            value: contentSecurityPolicy,
           }
         ],
       },
