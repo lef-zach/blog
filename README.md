@@ -165,6 +165,48 @@ SHORTLINK_RETENTION_DAYS=90
 SHORTLINK_REFERRER_LIMIT=10
 ```
 
+## Backups & Restore
+
+Backups are managed from **Admin → Backups** and stored on the server under `BACKUP_DIR` (default: `/backups`).
+
+**What’s included** (optional toggles):
+*   Database (default)
+*   Uploads (`/var/www/uploads`)
+*   Config files (`backend/.env`, `frontend/.env`)
+*   TLS certs (`nginx/certs`)
+
+**Encryption**
+*   Optional GPG symmetric encryption with a passphrase.
+*   Passphrase is never stored; keep it safe.
+
+**Restore modes**
+*   **Staged (recommended)**: restores to a new database and returns a new DB name for later cutover.
+*   **In-place**: overwrites the current database and may cause downtime.
+
+**Restore after staged DB**
+1) Update `DATABASE_URL` to the new database name
+2) Restart backend container
+
+**Backup env vars** (backend)
+```env
+BACKUP_DIR=/backups
+BACKUP_RETENTION_DAYS=30
+BACKUP_UPLOADS_PATH=/var/www/uploads
+BACKUP_BACKEND_ENV_PATH=/config/backend/.env
+BACKUP_FRONTEND_ENV_PATH=/config/frontend/.env
+BACKUP_CERTS_PATH=/config/nginx-certs
+```
+
+**Docker volumes**
+Backups and uploads are stored on the host:
+* `./backups` → `/backups`
+* `./uploads` → `/var/www/uploads`
+
+Create them once on the server:
+```bash
+mkdir -p backups uploads
+```
+
 ## Troubleshooting
 
 **Common errors:**

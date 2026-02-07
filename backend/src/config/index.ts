@@ -37,4 +37,21 @@ export const config = {
     eventRetentionDays: parseInt(process.env.SHORTLINK_RETENTION_DAYS || '90', 10),
     referrerLimit: parseInt(process.env.SHORTLINK_REFERRER_LIMIT || '10', 10),
   },
+
+  backup: {
+    dir: process.env.BACKUP_DIR || '/backups',
+    retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10),
+    uploadsPath: process.env.BACKUP_UPLOADS_PATH || '/var/www/uploads',
+    backendEnvPath: process.env.BACKUP_BACKEND_ENV_PATH || '/config/backend/.env',
+    frontendEnvPath: process.env.BACKUP_FRONTEND_ENV_PATH || '/config/frontend/.env',
+    certsPath: process.env.BACKUP_CERTS_PATH || '/config/nginx-certs',
+    s3: {
+      enabled: process.env.BACKUP_S3_ENABLED === 'true',
+      bucket: process.env.BACKUP_S3_BUCKET || '',
+      region: process.env.BACKUP_S3_REGION || 'us-east-1',
+      prefix: process.env.BACKUP_S3_PREFIX || 'backups',
+      accessKeyId: process.env.BACKUP_S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.BACKUP_S3_SECRET_ACCESS_KEY || '',
+    },
+  },
 };

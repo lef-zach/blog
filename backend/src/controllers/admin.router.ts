@@ -24,6 +24,14 @@ router.get('/analytics', adminController.getAnalytics);
 // Short link analytics
 router.get('/articles/:id/shortlinks', adminController.getShortLinkStats);
 
+// Backups
+router.get('/backups', adminController.listBackups);
+router.post('/backups', adminController.createBackup);
+router.get('/backups/jobs/:id', adminController.getBackupJob);
+router.get('/backups/:id/download', adminController.downloadBackup);
+router.post('/backups/:id/restore', adminController.restoreBackup);
+router.delete('/backups/:id', adminController.deleteBackup);
+
 // Users
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUser);

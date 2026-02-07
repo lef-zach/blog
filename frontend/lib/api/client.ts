@@ -141,6 +141,31 @@ const analyticsSchema = z.object({
   })),
 });
 
+const backupMetadataSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  filename: z.string(),
+  encrypted: z.boolean(),
+  includes: z.object({
+    db: z.boolean(),
+    uploads: z.boolean(),
+    env: z.boolean(),
+    certs: z.boolean(),
+  }),
+  size: z.number(),
+  s3Key: z.string().optional(),
+});
+
+const backupJobSchema = z.object({
+  id: z.string(),
+  type: z.enum(['backup', 'restore']),
+  status: z.enum(['pending', 'running', 'completed', 'failed']),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  message: z.string().optional(),
+  result: z.any().optional(),
+});
+
 class ApiError extends Error {
   constructor(
     public code: string,
@@ -659,6 +684,54 @@ export class ApiClient {
     return response;
   }
 
+  // Backups
+  async listBackups() {
+    const response = await this.request<z.infer<typeof backupMetadataSchema>[]>('/admin/backups');
+    return response;
+  }
+
+  async createBackup(options: {
+    includeDb?: boolean;
+    includeUploads?: boolean;
+    includeEnv?: boolean;
+    includeCerts?: boolean;
+    encrypt?: boolean;
+    passphrase?: string;
+  }) {
+    const response = await this.request<{ jobId: string }>('/admin/backups', {
+      method: 'POST',
+      body: JSON.stringify(options),
+    });
+    return response;
+  }
+
+  async getBackupJob(jobId: string) {
+    const response = await this.request<z.infer<typeof backupJobSchema>>(`/admin/backups/jobs/${jobId}`);
+    return response;
+  }
+
+  async restoreBackup(backupId: string, options: {
+    mode?: 'staged' | 'in-place';
+    restoreDb?: boolean;
+    restoreUploads?: boolean;
+    restoreEnv?: boolean;
+    restoreCerts?: boolean;
+    passphrase?: string;
+  }) {
+    const response = await this.request<{ jobId: string }>(`/admin/backups/${backupId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify(options),
+    });
+    return response;
+  }
+
+  async deleteBackup(backupId: string) {
+    const response = await this.request<{ deleted: boolean }>(`/admin/backups/${backupId}`, {
+      method: 'DELETE',
+    });
+    return response;
+  }
+
   // Newsletter
   async subscribe(email: string) {
     const response = await this.request<{ message: string }>('/newsletter/subscribe', {
@@ -687,3 +760,5 @@ export type Paper = z.infer<typeof paperSchema>;
 export type User = z.infer<typeof userSchema>;
 export type Settings = z.infer<typeof settingsSchema>;
 export type Analytics = z.infer<typeof analyticsSchema>;
+export type BackupMetadata = z.infer<typeof backupMetadataSchema>;
+export type BackupJob = z.infer<typeof backupJobSchema>;

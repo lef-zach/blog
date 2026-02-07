@@ -41,3 +41,7 @@ Thumbs.db
 
 # Local transcripts
 blog_30/
+
+# Backups
+/backups/
+/uploads/

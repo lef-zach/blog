@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { config } from '../config';
 import { AppError } from '../utils/error.util';
 import bcrypt from 'bcrypt';
+import path from 'path';
+import { backupService } from '../services/backup.service';
 
 const prisma = new PrismaClient();
 
@@ -229,6 +231,132 @@ export const adminController = {
         throw error;
       }
       throw new AppError(500, 'SHORTLINK_STATS_ERROR', 'Failed to fetch short link stats');
+    }
+  },
+
+  async listBackups(req: Request, res: Response) {
+    try {
+      const backups = await backupService.listBackups();
+      res.json({ data: backups });
+    } catch (error: any) {
+      throw new AppError(500, 'BACKUP_LIST_ERROR', 'Failed to list backups');
+    }
+  },
+
+  async createBackup(req: Request, res: Response) {
+    try {
+      const {
+        includeDb = true,
+        includeUploads = false,
+        includeEnv = false,
+        includeCerts = false,
+        encrypt = false,
+        passphrase,
+      } = req.body || {};
+
+      if (encrypt && (!passphrase || typeof passphrase !== 'string')) {
+        throw new AppError(400, 'BACKUP_PASSPHRASE_REQUIRED', 'Passphrase is required for encryption');
+      }
+
+      if (!includeDb && !includeUploads && !includeEnv && !includeCerts) {
+        throw new AppError(400, 'BACKUP_EMPTY', 'Select at least one backup component');
+      }
+
+      const jobId = await backupService.createBackupJob({
+        includes: {
+          db: Boolean(includeDb),
+          uploads: Boolean(includeUploads),
+          env: Boolean(includeEnv),
+          certs: Boolean(includeCerts),
+        },
+        encrypt: Boolean(encrypt),
+        passphrase: passphrase || undefined,
+      });
+
+      res.status(202).json({ data: { jobId } });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'BACKUP_CREATE_ERROR', error?.message || 'Failed to create backup');
+    }
+  },
+
+  async getBackupJob(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const job = await backupService.getJob(id);
+      if (!job) {
+        throw new AppError(404, 'BACKUP_JOB_NOT_FOUND', 'Backup job not found');
+      }
+      res.json({ data: job });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'BACKUP_JOB_ERROR', 'Failed to read backup job');
+    }
+  },
+
+  async downloadBackup(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const metadata = await backupService.getBackup(id);
+      if (!metadata) {
+        throw new AppError(404, 'BACKUP_NOT_FOUND', 'Backup not found');
+      }
+
+      const filePath = path.join(config.backup.dir, 'files', metadata.filename);
+      res.download(filePath, metadata.filename);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'BACKUP_DOWNLOAD_ERROR', 'Failed to download backup');
+    }
+  },
+
+  async restoreBackup(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const {
+        mode = 'staged',
+        restoreDb = true,
+        restoreUploads = false,
+        restoreEnv = false,
+        restoreCerts = false,
+        passphrase,
+      } = req.body || {};
+
+      if (!['staged', 'in-place'].includes(mode)) {
+        throw new AppError(400, 'RESTORE_MODE_INVALID', 'Invalid restore mode');
+      }
+
+      const jobId = await backupService.restoreBackupJob(id, {
+        mode,
+        restoreDb: Boolean(restoreDb),
+        restoreUploads: Boolean(restoreUploads),
+        restoreEnv: Boolean(restoreEnv),
+        restoreCerts: Boolean(restoreCerts),
+        passphrase: passphrase || undefined,
+      });
+
+      res.status(202).json({ data: { jobId } });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'BACKUP_RESTORE_ERROR', error?.message || 'Failed to restore backup');
+    }
+  },
+
+  async deleteBackup(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await backupService.deleteBackup(id);
+      res.json({ data: { deleted: true } });
+    } catch (error: any) {
+      throw new AppError(500, 'BACKUP_DELETE_ERROR', 'Failed to delete backup');
     }
   },
 

@@ -6,7 +6,8 @@ import {
     Settings,
     Users,
     BarChart3,
-    Mail
+    Mail,
+    Database
 } from 'lucide-react';
 
 export const sidebarItems = [
@@ -41,6 +42,12 @@ export const sidebarItems = [
         title: 'Analytics',
         href: '/admin/analytics',
         icon: BarChart3,
+        roles: ['ADMIN'],
+    },
+    {
+        title: 'Backups',
+        href: '/admin/backups',
+        icon: Database,
         roles: ['ADMIN'],
     },
     {

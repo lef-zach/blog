@@ -5,6 +5,7 @@ WORKDIR /app
 # Install PostgreSQL client for pg_isready and Puppeteer/Chrome dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    gnupg \
     python3 \
     make \
     g++ \
