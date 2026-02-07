@@ -92,12 +92,10 @@ export const profileController = {
         aboutArticleId
       } = req.body;
 
-      // We update both the main user fields (where applicable) and the siteSettings JSON blob
+      // We update siteSettings and related profile fields without overwriting user identity
       const user = await prisma.user.update({
         where: { id: userId },
         data: {
-          name: siteName,
-          bio: siteDescription,
           scholarUrl: scholarUrl, // Update root field (pass null to clear)
           socialLinks: socialLinks || {},
           siteSettings: {
@@ -105,7 +103,7 @@ export const profileController = {
             siteDescription,
             siteUrl,
             contactEmail,
-            socialLinks,
+            socialLinks: socialLinks || {},
             seo,
             features,
             aboutArticleId
@@ -125,15 +123,18 @@ export const profileController = {
         },
       });
 
+      const siteSettings = (user.siteSettings as any) || {};
+
       res.json({
         data: {
-          siteName: user.name,
-          siteDescription: user.bio || '',
-          siteUrl: (user.siteSettings as any)?.siteUrl || '',
-          contactEmail: (user.siteSettings as any)?.contactEmail || user.email,
-          socialLinks: user.socialLinks || {},
-          seo: (user.siteSettings as any)?.seo || {},
-          features: (user.siteSettings as any)?.features || {},
+          siteName: siteSettings.siteName || user.name,
+          siteDescription: siteSettings.siteDescription || user.bio || '',
+          siteUrl: siteSettings.siteUrl || '',
+          contactEmail: siteSettings.contactEmail || user.email,
+          socialLinks: siteSettings.socialLinks || user.socialLinks || {},
+          seo: siteSettings.seo || {},
+          features: siteSettings.features || {},
+          aboutArticleId: siteSettings.aboutArticleId || null,
         },
       });
     } catch (error: any) {
