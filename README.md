@@ -13,6 +13,7 @@ This project implements a secure, scalable blogging engine designed for performa
 *   **Security**: Hardened with Helmet, strict CORS, rate limiting, and input sanitization.
 *   **Observability**: Structured JSON logging and request correlation tracing.
 *   **SEO Settings**: Global meta title/description (and optional OG image) from Admin settings.
+*   **Short Links**: Auto-generated `/s/<code>` links with admin-only referrer analytics.
 
 ## Architecture
 
@@ -39,6 +40,7 @@ Prerequisites: Docker and Docker Compose installed.
     cp frontend/.env.example frontend/.env
     ```
     *Set strong values for `JWT_SECRET` and `JWT_REFRESH_SECRET` before going public.*
+    *Set `SHORTLINK_HASH_SALT` to a strong random value for short-link analytics.*
 
 3.  **Install & Bootstrap:**
     ```bash
@@ -126,6 +128,33 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
 *   **Featured images**: Uploads are stored as data URLs. For large images, use a hosted URL instead. Layout/size can be set to Banner or Left Portrait with S/M/B sizes.
 *   **Inline images**: Use the editor image button, then select the image and choose S/M/B in the toolbar size dropdown.
 
+## Short Links
+
+Short links are auto-generated for blog posts and are available at `/s/<code>`.
+
+**Behavior**
+*   Generated once and permanent (stored in the database).
+*   Redirects only for `PUBLISHED` + `PUBLIC` posts; otherwise returns 404.
+*   Referrer analytics are stored as **domain only** (no full URLs), with hashed IPs.
+*   Events are retained for 90 days by default.
+*   Short-link stats are **admin-only**.
+
+**Admin UI**
+*   Article list shows `/s/<code>` and total short clicks.
+*   Article editor shows total clicks, last hit, last-90-day clicks, and top referrers.
+
+**Site URL for short links**
+*   Set `siteUrl` in Admin → Settings (e.g. `https://lefzach.prof`).
+*   This is used to build the full short URL in the admin UI.
+
+**Short-link env vars** (backend)
+```env
+SHORTLINK_HASH_SALT="change-me"
+SHORTLINK_CODE_LENGTH=6
+SHORTLINK_RETENTION_DAYS=90
+SHORTLINK_REFERRER_LIMIT=10
+```
+
 ## Troubleshooting
 
 **Common errors:**
@@ -133,6 +162,7 @@ If you need to change the exposed ports (e.g., if port 5000 is occupied), modify
 *   **`Not allowed by CORS`**: add the exact browser origin(s) to `CORS_ORIGIN` and restart backend.
 *   **`Session expired` loops**: set `COOKIE_SECURE=false` on HTTP, or use HTTPS.
 *   **`column ... does not exist`**: run `docker compose exec backend npx prisma migrate deploy`.
+*   **Short links show LAN IP**: set `siteUrl` in Admin → Settings and rebuild the frontend.
 
 **Stop and clean everything:**
 If you encounter weird database errors or want a fresh start:
