@@ -192,8 +192,8 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         </span>
         <span className="ql-formats border-l pl-2 ml-2 flex items-center gap-2">
           <label className="text-xs text-muted-foreground">Image Size</label>
-          <select
-            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+           <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs bg-white"
             value={inlineImageSize}
             onChange={(e) => applyImageSize(e.target.value)}
           >

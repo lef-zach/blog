@@ -12,7 +12,7 @@ const ALLOWED_TAGS = [
 ];
 
 // keep attrs tight. Avoid style.
-const ALLOWED_ATTR = ["href", "title", "target", "rel", "data-card", "src", "alt", "width", "height", "data-size"];
+const ALLOWED_ATTR = ["href", "title", "target", "rel", "data-card", "src", "alt", "width", "height", "data-size", "class"];
 
 function isSafeHref(href: string) {
     // allow only http/https/mailto/tel
