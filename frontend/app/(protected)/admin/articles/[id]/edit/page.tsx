@@ -79,6 +79,7 @@ export default function ArticleEditorPage() {
   const [shortLinkLoading, setShortLinkLoading] = useState(false);
   const [shortLinkError, setShortLinkError] = useState('');
   const [siteUrl, setSiteUrl] = useState<string | null>(null);
+  const [siteUrls, setSiteUrls] = useState<string[]>([]);
 
   const fetchArticle = async () => {
     if (!isEditing) return;
@@ -132,6 +133,7 @@ export default function ArticleEditorPage() {
       try {
         const response = await apiClient.getPublicSettings();
         setSiteUrl(response.data?.siteUrl || null);
+        setSiteUrls(Array.isArray(response.data?.siteUrls) ? response.data.siteUrls : []);
       } catch (err) {
         console.error('Failed to fetch site settings for short links', err);
       }
@@ -178,7 +180,7 @@ export default function ArticleEditorPage() {
       .replace(/(^-|-$)/g, '');
   };
 
-  const getShortUrl = (code: string) => {
+  const getShortUrls = (code: string) => {
     const normalizeSiteUrl = (value?: string | null) => {
       if (!value) return null;
       const trimmed = value.trim();
@@ -193,15 +195,19 @@ export default function ArticleEditorPage() {
       }
     };
 
-    const siteOrigin = normalizeSiteUrl(siteUrl);
+    const origins = [siteUrl, ...siteUrls]
+      .map((entry) => normalizeSiteUrl(entry))
+      .filter((entry): entry is string => !!entry);
+    const uniqueOrigins = Array.from(new Set(origins));
     const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-    const origin = siteOrigin || fallbackOrigin;
+    const resolvedOrigins = uniqueOrigins.length > 0 ? uniqueOrigins : (fallbackOrigin ? [fallbackOrigin] : []);
 
-    return origin ? `${origin}/s/${code}` : `/s/${code}`;
+    return resolvedOrigins.length > 0
+      ? resolvedOrigins.map((origin) => `${origin}/s/${code}`)
+      : [`/s/${code}`];
   };
 
-  const copyShortUrl = (code: string) => {
-    const shortUrl = getShortUrl(code);
+  const copyShortUrl = (shortUrl: string) => {
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(shortUrl);
       return;
@@ -615,17 +621,23 @@ export default function ArticleEditorPage() {
                       );
                     }
 
+                    const shortUrls = getShortUrls(shortCode);
+
                     return (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium">/s/{shortCode}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => copyShortUrl(shortCode)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                        <div className="space-y-2">
+                          {shortUrls.map((shortUrl) => (
+                            <div key={shortUrl} className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-medium break-all">{shortUrl}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyShortUrl(shortUrl)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Total clicks: {shortLinkStats?.shortClicks ?? article.shortClicks ?? 0}

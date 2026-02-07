@@ -19,6 +19,7 @@ type PublicSettings = {
   siteName?: string
   siteDescription?: string
   siteUrl?: string
+  siteUrls?: string[]
   seo?: {
     metaTitle?: string
     metaDescription?: string
@@ -45,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteDescription = settings?.siteDescription || 'A modern blog platform.'
   const metaTitle = settings?.seo?.metaTitle || siteName
   const metaDescription = settings?.seo?.metaDescription || siteDescription
-  const siteUrl = settings?.siteUrl || 'http://localhost'
+  const siteUrl = settings?.siteUrl || settings?.siteUrls?.[0] || 'http://localhost'
   const ogImage = settings?.seo?.ogImage
 
   let metadataBase: URL | undefined

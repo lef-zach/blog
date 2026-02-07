@@ -89,6 +89,7 @@ const settingsSchema = z.object({
   siteName: z.string(),
   siteDescription: z.string(),
   siteUrl: z.string(),
+  siteUrls: z.array(z.string()).optional().nullable(),
   contactEmail: z.string(),
   socialLinks: z.object({
     github: z.string().optional().nullable(),

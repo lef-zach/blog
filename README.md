@@ -146,6 +146,7 @@ Short links are auto-generated for blog posts and are available at `/s/<code>`.
 **Site URL for short links**
 *   Set `siteUrl` in Admin → Settings (e.g. `https://lefzach.prof`).
 *   This is used to build the full short URL in the admin UI.
+*   Add extra domains in **Additional Domains** (comma-separated) to offer multiple short-link bases.
 
 **Short-link env vars** (backend)
 ```env

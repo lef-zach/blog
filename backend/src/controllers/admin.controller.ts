@@ -6,6 +6,42 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const MAX_SITE_URLS = 10;
+
+const normalizeSiteUrlValue = (value?: string | null) => {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeSiteUrls = (value: unknown, primary?: string | null) => {
+  const primaryOrigin = normalizeSiteUrlValue(primary || null);
+  const rawValues = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(/[\n,]+/)
+      : [];
+
+  const normalized = rawValues
+    .map((entry) => normalizeSiteUrlValue(String(entry)))
+    .filter((entry): entry is string => !!entry);
+
+  const unique = Array.from(new Set(normalized));
+  const filtered = primaryOrigin
+    ? unique.filter((entry) => entry !== primaryOrigin)
+    : unique;
+
+  return filtered.slice(0, MAX_SITE_URLS);
+};
+
 export const adminController = {
   // Get admin stats
   async getStats(req: Request, res: Response) {
@@ -412,6 +448,10 @@ export const adminController = {
         newSettings.siteUrl = typeof req.body.siteUrl === 'string' ? req.body.siteUrl : '';
       }
 
+      if (req.body.siteUrls !== undefined) {
+        newSettings.siteUrls = normalizeSiteUrls(req.body.siteUrls, newSettings.siteUrl);
+      }
+
       const allowedFields = ['siteName', 'siteDescription', 'contactEmail', 'socialLinks', 'seo'];
       allowedFields.forEach(field => {
         if (req.body[field] !== undefined) {
@@ -466,11 +506,14 @@ export const adminController = {
       const settings: any = (admin.siteSettings as any) || {};
 
       // Fix potential [object Object] corruption or missing fields
-      const cleanSettings = {
-        ...settings,
-        siteUrl: typeof settings.siteUrl === 'string' ? settings.siteUrl : '',
-        id: admin.id
-      };
+       const cleanSettings = {
+         ...settings,
+         siteUrl: typeof settings.siteUrl === 'string' ? settings.siteUrl : '',
+         siteUrls: Array.isArray(settings.siteUrls)
+           ? normalizeSiteUrls(settings.siteUrls, settings.siteUrl)
+           : [],
+         id: admin.id
+       };
 
       res.json({ data: cleanSettings });
     } catch (error: any) {

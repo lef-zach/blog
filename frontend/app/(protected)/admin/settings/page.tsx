@@ -27,6 +27,7 @@ export default function SettingsPage() {
     siteName: '',
     siteDescription: '',
     siteUrl: '',
+    siteUrls: [],
     contactEmail: '',
     socialLinks: {
       github: '',
@@ -59,6 +60,36 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [passMessage, setPassMessage] = useState({ type: '', text: '' });
 
+  const normalizeSiteUrlValue = (value?: string | null) => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
+    try {
+      return new URL(withProtocol).origin;
+    } catch {
+      return null;
+    }
+  };
+
+  const parseSiteUrls = (value: unknown, primary?: string | null) => {
+    const primaryOrigin = normalizeSiteUrlValue(primary || null);
+    const rawValues = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(/[\n,]+/)
+        : [];
+
+    const normalized = rawValues
+      .map((entry) => normalizeSiteUrlValue(String(entry)))
+      .filter((entry): entry is string => !!entry);
+
+    const unique = Array.from(new Set(normalized));
+    return primaryOrigin ? unique.filter((entry) => entry !== primaryOrigin) : unique;
+  };
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
@@ -78,6 +109,11 @@ export default function SettingsPage() {
           (sanitizedSettings as any)[key] = '';
         }
       });
+
+      sanitizedSettings.siteUrls = parseSiteUrls(
+        (sanitizedSettings as any).siteUrls,
+        sanitizedSettings.siteUrl
+      );
 
       // Ensure we merge with defaults
       setSettings({
@@ -134,10 +170,16 @@ export default function SettingsPage() {
     setSettings((prev) => {
       // Handle top-level fields
       if (section === 'root') {
-        return {
+        const updated = {
           ...prev,
           [field]: value
         };
+
+        if (field === 'siteUrl') {
+          updated.siteUrls = parseSiteUrls(updated.siteUrls, value);
+        }
+
+        return updated;
       }
       // Handle nested object fields
       return {
@@ -148,6 +190,13 @@ export default function SettingsPage() {
         },
       };
     });
+  };
+
+  const handleSiteUrlsChange = (value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      siteUrls: parseSiteUrls(value, prev.siteUrl),
+    }));
   };
 
   const handleSocialLinkChange = (platform: string, value: string) => {
@@ -256,6 +305,19 @@ export default function SettingsPage() {
                   placeholder="https://yourdomain.com"
                   className="mt-1"
                 />
+              </div>
+              <div>
+                <Label htmlFor="siteUrls">Additional Domains</Label>
+                <Input
+                  id="siteUrls"
+                  value={(settings.siteUrls || []).join(', ')}
+                  onChange={(e) => handleSiteUrlsChange(e.target.value)}
+                  placeholder="lefzach.com, lefzach.prof"
+                  className="mt-1"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Comma-separated domains that should be offered for short links.
+                </p>
               </div>
               <div>
                 <Label htmlFor="contactEmail">Contact Email</Label>

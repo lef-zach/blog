@@ -56,6 +56,7 @@ export default function ArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [error, setError] = useState('');
   const [siteUrl, setSiteUrl] = useState<string | null>(null);
+  const [siteUrls, setSiteUrls] = useState<string[]>([]);
 
   const fetchArticles = async () => {
     try {
@@ -81,6 +82,7 @@ export default function ArticlesPage() {
       try {
         const response = await apiClient.getPublicSettings();
         setSiteUrl(response.data?.siteUrl || null);
+        setSiteUrls(Array.isArray(response.data?.siteUrls) ? response.data.siteUrls : []);
       } catch (err) {
         console.error('Failed to fetch site settings for short links', err);
       }
@@ -135,9 +137,12 @@ export default function ArticlesPage() {
       }
     };
 
-    const siteOrigin = normalizeSiteUrl(siteUrl);
+    const origins = [siteUrl, ...siteUrls]
+      .map((entry) => normalizeSiteUrl(entry))
+      .filter((entry): entry is string => !!entry);
+    const uniqueOrigins = Array.from(new Set(origins));
     const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-    const origin = siteOrigin || fallbackOrigin;
+    const origin = uniqueOrigins[0] || fallbackOrigin;
 
     return origin ? `${origin}/s/${code}` : `/s/${code}`;
   };

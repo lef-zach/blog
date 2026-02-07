@@ -4,6 +4,42 @@ import { AppError } from '../utils/error.util';
 
 const prisma = new PrismaClient();
 
+const MAX_SITE_URLS = 10;
+
+const normalizeSiteUrlValue = (value?: string | null) => {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeSiteUrls = (value: unknown, primary?: string | null) => {
+  const primaryOrigin = normalizeSiteUrlValue(primary || null);
+  const rawValues = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(/[\n,]+/)
+      : [];
+
+  const normalized = rawValues
+    .map((entry) => normalizeSiteUrlValue(String(entry)))
+    .filter((entry): entry is string => !!entry);
+
+  const unique = Array.from(new Set(normalized));
+  const filtered = primaryOrigin
+    ? unique.filter((entry) => entry !== primaryOrigin)
+    : unique;
+
+  return filtered.slice(0, MAX_SITE_URLS);
+};
+
 export const profileController = {
   // Get profile
   async getProfile(req: Request, res: Response, next: NextFunction) {
@@ -35,6 +71,7 @@ export const profileController = {
         siteName: user.name,
         siteDescription: user.bio || '',
         siteUrl: '',
+        siteUrls: [],
         contactEmail: user.email,
         socialLinks: user.socialLinks || {
           github: null,
@@ -69,6 +106,9 @@ export const profileController = {
           siteName: savedSettings.siteName || user.name,
           siteDescription: savedSettings.siteDescription || user.bio || '',
           contactEmail: savedSettings.contactEmail || user.email,
+          siteUrls: Array.isArray(savedSettings.siteUrls)
+            ? normalizeSiteUrls(savedSettings.siteUrls, savedSettings.siteUrl)
+            : [],
         },
       });
     } catch (error: any) {
@@ -88,6 +128,7 @@ export const profileController = {
         seo,
         features,
         siteUrl,
+        siteUrls,
         scholarUrl,
         aboutArticleId
       } = req.body;
@@ -102,6 +143,7 @@ export const profileController = {
             siteName,
             siteDescription,
             siteUrl,
+            siteUrls: normalizeSiteUrls(siteUrls, siteUrl),
             contactEmail,
             socialLinks: socialLinks || {},
             seo,
@@ -130,6 +172,9 @@ export const profileController = {
           siteName: siteSettings.siteName || user.name,
           siteDescription: siteSettings.siteDescription || user.bio || '',
           siteUrl: siteSettings.siteUrl || '',
+          siteUrls: Array.isArray(siteSettings.siteUrls)
+            ? normalizeSiteUrls(siteSettings.siteUrls, siteSettings.siteUrl)
+            : [],
           contactEmail: siteSettings.contactEmail || user.email,
           socialLinks: siteSettings.socialLinks || user.socialLinks || {},
           seo: siteSettings.seo || {},
@@ -168,6 +213,7 @@ export const profileController = {
         siteName: user.name,
         siteDescription: user.bio || '',
         siteUrl: '',
+        siteUrls: [],
         contactEmail: user.email,
         socialLinks: user.socialLinks || {
           github: null,
@@ -200,6 +246,9 @@ export const profileController = {
           siteName: savedSettings.siteName || user.name,
           siteDescription: savedSettings.siteDescription || user.bio || '',
           contactEmail: savedSettings.contactEmail || user.email,
+          siteUrls: Array.isArray(savedSettings.siteUrls)
+            ? normalizeSiteUrls(savedSettings.siteUrls, savedSettings.siteUrl)
+            : [],
         },
       });
     } catch (error: any) {
