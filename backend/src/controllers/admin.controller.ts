@@ -4,6 +4,7 @@ import { config } from '../config';
 import { AppError } from '../utils/error.util';
 import bcrypt from 'bcrypt';
 import path from 'path';
+import fs from 'fs/promises';
 import { backupService } from '../services/backup.service';
 
 const prisma = new PrismaClient();
@@ -313,6 +314,24 @@ export const adminController = {
         throw error;
       }
       throw new AppError(500, 'BACKUP_DOWNLOAD_ERROR', 'Failed to download backup');
+    }
+  },
+
+  async downloadRestoreBundle(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { bundleFile, bundleDir } = await backupService.createRestoreBundle(id);
+      const filename = `restore-bundle-${id}.tar.gz`;
+
+      res.download(bundleFile, filename, async () => {
+        await fs.rm(bundleFile, { force: true });
+        await fs.rm(bundleDir, { recursive: true, force: true });
+      });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'BACKUP_BUNDLE_ERROR', error?.message || 'Failed to build restore bundle');
     }
   },
 

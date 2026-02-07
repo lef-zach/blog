@@ -237,6 +237,56 @@ const buildManifest = (id: string, includes: BackupIncludes, encrypted: boolean)
   encrypted,
 });
 
+const buildRestoreInstructions = (metadata: BackupMetadata) => {
+  return [
+    'Restore Guide',
+    '=============',
+    '',
+    `Backup ID: ${metadata.id}`,
+    `Created: ${metadata.createdAt}`,
+    `Encrypted: ${metadata.encrypted ? 'yes' : 'no'}`,
+    `Includes: ${Object.entries(metadata.includes)
+      .filter(([, value]) => value)
+      .map(([key]) => key)
+      .join(', ') || 'none'}`,
+    '',
+    'Contents',
+    '--------',
+    '- backup archive (the .tar.gz or .tar.gz.gpg file)',
+    '- metadata.json (place into /backups/metadata)',
+    '- this restore guide',
+    '',
+    'Restore on an existing server (recommended, zero-downtime staged)',
+    '-----------------------------------------------------------------',
+    '1) Copy the backup file into /backups/files on the server.',
+    '2) Copy metadata.json into /backups/metadata/<backup-id>.json.',
+    '3) Open Admin -> Backups, select the backup, choose Staged restore.',
+    '4) After restore completes, update DATABASE_URL to the staged DB name.',
+    '5) Restart backend container to cut over.',
+    '',
+    'Restore on a brand new machine (manual DB restore)',
+    '---------------------------------------------------',
+    '1) Install Docker + Docker Compose.',
+    '2) Clone the repo and configure backend/.env + frontend/.env.',
+    '3) Start postgres: docker compose up -d postgres',
+    '4) Decrypt the backup (if encrypted):',
+    '   gpg --output backup.tar.gz -d <backup-file>.tar.gz.gpg',
+    '5) Extract the archive:',
+    '   tar -xzf backup.tar.gz',
+    '6) Restore DB inside the backend container:',
+    '   docker compose up -d backend',
+    '   docker compose exec backend pg_restore -d <database> --clean --if-exists /path/to/db.dump',
+    '7) Start the stack: docker compose up -d',
+    '',
+    'Notes',
+    '-----',
+    '- db.dump is included only if Database was selected.',
+    '- uploads.tar.gz is included only if Uploads were selected.',
+    '- env.tar.gz and certs.tar.gz are included if enabled.',
+    '- If you restored to a staged DB, update DATABASE_URL and restart backend.',
+  ].join('\n');
+};
+
 const bundleBackup = async (id: string, workingDir: string, encrypt: boolean, passphrase?: string) => {
   await ensureDir(backupsDir());
   const tarFile = path.join(backupsDir(), `${id}.tar.gz`);
@@ -258,6 +308,32 @@ const computeFileSize = async (filePath: string) => {
   return stats.size;
 };
 
+const createRestoreBundleFile = async (backupId: string) => {
+  await ensurePaths();
+  const metadata = await readMetadata(backupId);
+  if (!metadata) {
+    throw new Error('Backup not found');
+  }
+
+  const archivePath = path.join(backupsDir(), metadata.filename);
+  if (!(await pathExists(archivePath))) {
+    throw new Error('Backup archive not found');
+  }
+
+  const bundleId = getSafeId('restore-bundle');
+  const bundleDir = path.join(tmpDir(), bundleId);
+  await ensureDir(bundleDir);
+
+  await fs.copyFile(archivePath, path.join(bundleDir, metadata.filename));
+  await fs.writeFile(path.join(bundleDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
+  await fs.writeFile(path.join(bundleDir, 'restore-instructions.txt'), buildRestoreInstructions(metadata));
+
+  const bundleFile = path.join(tmpDir(), `${bundleId}.tar.gz`);
+  await runCommand('tar', ['-czf', bundleFile, '-C', bundleDir, '.']);
+
+  return { bundleFile, bundleDir, bundleId };
+};
+
 const deleteBackup = async (backupId: string) => {
   const metadata = await readMetadata(backupId);
   if (!metadata) return;
@@ -277,6 +353,11 @@ export const backupService = {
 
   async deleteBackup(backupId: string) {
     await deleteBackup(backupId);
+  },
+
+  async createRestoreBundle(backupId: string) {
+    const { bundleFile, bundleDir } = await createRestoreBundleFile(backupId);
+    return { bundleFile, bundleDir };
   },
 
   async getJob(jobId: string) {

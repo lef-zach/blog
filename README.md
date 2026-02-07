@@ -168,6 +168,7 @@ SHORTLINK_REFERRER_LIMIT=10
 ## Backups & Restore
 
 Backups are managed from **Admin → Backups** and stored on the server under `BACKUP_DIR` (default: `/backups`).
+Each backup can be downloaded as a **restore bundle** that includes the archive, metadata, and a restore guide.
 
 **What’s included** (optional toggles):
 *   Database (default)

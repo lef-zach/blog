@@ -160,6 +160,11 @@ export default function BackupsPage() {
     window.location.href = `${window.location.origin}/api/v1/admin/backups/${backupId}/download`;
   };
 
+  const handleDownloadBundle = (backupId: string) => {
+    if (typeof window === 'undefined') return;
+    window.location.href = `${window.location.origin}/api/v1/admin/backups/${backupId}/bundle`;
+  };
+
   const includesLabel = (backup: BackupMetadata) => {
     const parts = [];
     if (backup.includes.db) parts.push('db');
@@ -313,6 +318,7 @@ export default function BackupsPage() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => handleDownload(backup.id)}>Download</Button>
+                        <Button variant="outline" onClick={() => handleDownloadBundle(backup.id)}>Restore Bundle</Button>
                         <Button variant="outline" onClick={() => setSelectedBackup(backup)}>Restore</Button>
                         <Button variant="destructive" onClick={() => handleDeleteBackup(backup.id)}>Delete</Button>
                       </div>

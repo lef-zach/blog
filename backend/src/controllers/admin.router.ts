@@ -29,6 +29,7 @@ router.get('/backups', adminController.listBackups);
 router.post('/backups', adminController.createBackup);
 router.get('/backups/jobs/:id', adminController.getBackupJob);
 router.get('/backups/:id/download', adminController.downloadBackup);
+router.get('/backups/:id/bundle', adminController.downloadRestoreBundle);
 router.post('/backups/:id/restore', adminController.restoreBackup);
 router.delete('/backups/:id', adminController.deleteBackup);
 
