@@ -14,7 +14,7 @@ export class AppError extends Error {
 
 export const errorHandler = (
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) => {
@@ -27,12 +27,22 @@ export const errorHandler = (
     });
   }
 
+  // Handle payload size limits
+  if (err.message && err.message.includes('request entity too large')) {
+    return res.status(413).json({
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request payload is too large. Maximum allowed size is 10MB.',
+      },
+    });
+  }
+
   console.error('Unexpected error:', err);
   return res.status(500).json({
     error: {
       code: 'INTERNAL_SERVER_ERROR',
       message: err.message,
-      stack: err.stack,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
     },
   });
 };
