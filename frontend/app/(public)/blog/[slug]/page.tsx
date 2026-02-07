@@ -103,6 +103,37 @@ export default function ArticlePage() {
   const featuredSize = (article.featuredImageSize || 'M').toLowerCase();
   const authorInitials = getAuthorInitials(article.author?.name);
   const authorLabel = article.author?.name ? `Author ${article.author.name}` : 'Author';
+  const shareText = article.excerpt || `Check out this article: ${article.title}`;
+
+  const copyShareLink = async (url: string) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+        return;
+      } catch {
+      }
+    }
+    window.prompt('Copy link', url);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: shareText,
+          url,
+        });
+        return;
+      } catch {
+      }
+    }
+
+    await copyShareLink(url);
+  };
 
   const articleHeader = (
     <header>
@@ -130,20 +161,7 @@ export default function ArticlePage() {
         <Button
           variant="outline"
           size="icon"
-          onClick={() => {
-            if (navigator.share) {
-              navigator
-                .share({
-                  title: article.title,
-                  text: article.excerpt || `Check out this article: ${article.title}`,
-                  url: window.location.href,
-                })
-                .catch(console.error);
-            } else {
-              navigator.clipboard.writeText(window.location.href);
-              alert('Link copied to clipboard!');
-            }
-          }}
+          onClick={handleShare}
         >
           <Share2 className="h-4 w-4" />
           <span className="sr-only">Share</span>
