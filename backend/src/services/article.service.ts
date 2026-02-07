@@ -171,6 +171,19 @@ export class ArticleService {
     });
   }
 
+  async getPublicFeaturedImageBySlug(slug: string) {
+    return prisma.article.findFirst({
+      where: {
+        slug,
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+      },
+      select: {
+        featuredImage: true,
+      },
+    });
+  }
+
   async ensureShortCode(articleId: string, currentCode?: string | null) {
     if (currentCode) {
       return currentCode;

@@ -64,6 +64,12 @@ const normalizeOgImage = (value?: string | null) => {
   return null
 }
 
+const isDataImage = (value?: string | null) => {
+  if (!value) return false
+  const trimmed = value.trim()
+  return trimmed.startsWith('data:image/')
+}
+
 const resolveOgImage = (value: string | null, siteOrigin: string) => {
   if (!value) return null
   if (value.startsWith('/')) {
@@ -115,8 +121,10 @@ export async function generateMetadata({
   const siteOrigin = normalizeSiteOrigin(settings?.siteUrl || settings?.siteUrls?.[0]) || 'http://localhost'
   const canonicalUrl = `${siteOrigin}/blog/${article.slug || params.slug}`
   const description = article.excerpt || article.metaDescription || article.title || ''
+  const featuredImageIsData = isDataImage(article.featuredImage)
+  const featuredImageProxy = `${siteOrigin}/api/v1/articles/${article.slug || params.slug}/featured-image`
   const ogImage = resolveOgImage(
-    normalizeOgImage(article.featuredImage)
+    (featuredImageIsData ? featuredImageProxy : normalizeOgImage(article.featuredImage))
       || normalizeOgImage(settings?.seo?.ogImage)
       || '/opengraph-image',
     siteOrigin

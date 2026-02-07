@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, Request } from 'express';
 import articleService from '../services/article.service';
 import { createArticleSchema, updateArticleSchema, publishArticleSchema, queryArticlesSchema } from '../validators/article.validator';
 import { AuthRequest } from '../middleware/auth';
 import { authenticate, optionalAuthenticate, authorize } from '../middleware/auth';
 import { writeLimiter } from '../middleware/rateLimit';
+import { AppError } from '../middleware/error';
 
 const router = Router();
 
@@ -88,6 +89,57 @@ export const getArticleBySlug = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+export const getArticleFeaturedImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { slug } = req.params;
+    const result = await articleService.getPublicFeaturedImageBySlug(slug);
+
+    if (!result?.featuredImage) {
+      throw new AppError(404, 'FEATURED_IMAGE_NOT_FOUND', 'Featured image not found');
+    }
+
+    const { featuredImage } = result;
+
+    if (featuredImage.startsWith('data:image/')) {
+      const base64Match = featuredImage.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (base64Match) {
+        const mimeType = base64Match[1];
+        const data = base64Match[2];
+        const buffer = Buffer.from(data, 'base64');
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+        res.send(buffer);
+        return;
+      }
+
+      const utf8Match = featuredImage.match(/^data:(image\/[a-zA-Z0-9+.-]+);charset=utf-8,(.+)$/);
+      if (utf8Match) {
+        const mimeType = utf8Match[1];
+        const data = decodeURIComponent(utf8Match[2]);
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+        res.send(Buffer.from(data, 'utf8'));
+        return;
+      }
+
+      throw new AppError(422, 'FEATURED_IMAGE_INVALID', 'Unsupported featured image format');
+    }
+
+    try {
+      const url = new URL(featuredImage);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error('Invalid protocol');
+      }
+      res.redirect(302, url.toString());
+      return;
+    } catch {
+      throw new AppError(422, 'FEATURED_IMAGE_INVALID', 'Invalid featured image URL');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateArticle = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -142,6 +194,7 @@ export const getVersions = async (req: AuthRequest, res: Response, next: NextFun
 // Route definitions
 router.post('/', authenticate, authorize('ADMIN'), writeLimiter, createArticle);
 router.get('/', optionalAuthenticate, getArticles);
+router.get('/:slug/featured-image', getArticleFeaturedImage);
 router.get('/:slug', getArticleBySlug);
 router.put('/:id', authenticate, authorize('ADMIN'), writeLimiter, updateArticle);
 router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, deleteArticle);
