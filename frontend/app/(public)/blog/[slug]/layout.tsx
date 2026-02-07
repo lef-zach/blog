@@ -52,6 +52,14 @@ const normalizeOgImage = (value?: string | null) => {
   return null
 }
 
+const resolveOgImage = (value: string | null, siteOrigin: string) => {
+  if (!value) return null
+  if (value.startsWith('/')) {
+    return new URL(value, siteOrigin).toString()
+  }
+  return value
+}
+
 const fetchPublicSettings = async (): Promise<PublicSettings | null> => {
   try {
     const response = await fetch(`${INTERNAL_API_BASE}/profile/public`, {
@@ -95,9 +103,12 @@ export async function generateMetadata({
   const siteOrigin = normalizeSiteOrigin(settings?.siteUrl || settings?.siteUrls?.[0]) || 'http://localhost'
   const canonicalUrl = `${siteOrigin}/blog/${article.slug || params.slug}`
   const description = article.excerpt || article.metaDescription || article.title || ''
-  const ogImage = normalizeOgImage(article.featuredImage)
-    || normalizeOgImage(settings?.seo?.ogImage)
-    || '/opengraph-image'
+  const ogImage = resolveOgImage(
+    normalizeOgImage(article.featuredImage)
+      || normalizeOgImage(settings?.seo?.ogImage)
+      || '/opengraph-image',
+    siteOrigin
+  )
 
   let metadataBase: URL | undefined
   try {
@@ -116,7 +127,9 @@ export async function generateMetadata({
       description,
       url: canonicalUrl,
       type: 'article',
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: ogImage
+        ? [{ url: ogImage, width: 1200, height: 630, alt: article.title || 'Blog Article' }]
+        : undefined,
     },
     twitter: {
       card: ogImage ? 'summary_large_image' : 'summary',

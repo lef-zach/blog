@@ -46,6 +46,14 @@ const normalizeOgImage = (value?: string | null) => {
   return null
 }
 
+const resolveOgImage = (value: string | null, siteOrigin: string) => {
+  if (!value) return null
+  if (value.startsWith('/')) {
+    return new URL(value, siteOrigin).toString()
+  }
+  return value
+}
+
 type PublicSettings = {
   siteName?: string
   siteDescription?: string
@@ -82,9 +90,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   let metadataBase: URL | undefined
   let canonicalUrl: string | undefined
+  let siteOrigin = 'http://localhost'
   try {
     const normalizedOrigin = normalizeSiteOrigin(siteUrl)
     if (normalizedOrigin) {
+      siteOrigin = normalizedOrigin
       metadataBase = new URL(normalizedOrigin)
       canonicalUrl = new URL('/', metadataBase).toString()
     }
@@ -92,7 +102,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase = undefined
   }
 
-  const defaultOgImage = ogImage || '/opengraph-image'
+  const defaultOgImage = resolveOgImage(ogImage || '/opengraph-image', siteOrigin)
 
   return {
     metadataBase,
@@ -105,7 +115,9 @@ export async function generateMetadata(): Promise<Metadata> {
       url: canonicalUrl || siteUrl,
       siteName,
       type: 'website',
-      images: defaultOgImage ? [{ url: defaultOgImage }] : undefined,
+      images: defaultOgImage
+        ? [{ url: defaultOgImage, width: 1200, height: 630, alt: siteName }]
+        : undefined,
     },
     twitter: {
       card: defaultOgImage ? 'summary_large_image' : 'summary',
