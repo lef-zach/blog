@@ -35,6 +35,23 @@ const normalizeSiteOrigin = (value?: string | null) => {
   }
 }
 
+const normalizeOgImage = (value?: string | null) => {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null
+  if (trimmed.startsWith('/')) return trimmed
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString()
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 const fetchPublicSettings = async (): Promise<PublicSettings | null> => {
   try {
     const response = await fetch(`${INTERNAL_API_BASE}/profile/public`, {
@@ -78,7 +95,9 @@ export async function generateMetadata({
   const siteOrigin = normalizeSiteOrigin(settings?.siteUrl || settings?.siteUrls?.[0]) || 'http://localhost'
   const canonicalUrl = `${siteOrigin}/blog/${article.slug || params.slug}`
   const description = article.excerpt || article.metaDescription || article.title || ''
-  const ogImage = article.featuredImage || settings?.seo?.ogImage || '/opengraph-image'
+  const ogImage = normalizeOgImage(article.featuredImage)
+    || normalizeOgImage(settings?.seo?.ogImage)
+    || '/opengraph-image'
 
   let metadataBase: URL | undefined
   try {

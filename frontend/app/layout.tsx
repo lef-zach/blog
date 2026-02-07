@@ -29,6 +29,23 @@ const normalizeSiteOrigin = (value?: string | null) => {
   }
 }
 
+const normalizeOgImage = (value?: string | null) => {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null
+  if (trimmed.startsWith('/')) return trimmed
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString()
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 type PublicSettings = {
   siteName?: string
   siteDescription?: string
@@ -61,7 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const metaTitle = settings?.seo?.metaTitle || siteName
   const metaDescription = settings?.seo?.metaDescription || siteDescription
   const siteUrl = settings?.siteUrl || settings?.siteUrls?.[0] || 'http://localhost'
-  const ogImage = settings?.seo?.ogImage
+  const ogImage = normalizeOgImage(settings?.seo?.ogImage)
 
   let metadataBase: URL | undefined
   let canonicalUrl: string | undefined
