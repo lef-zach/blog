@@ -15,6 +15,14 @@ const INTERNAL_API_BASE = API_BASE_URL.startsWith('http')
   ? API_BASE_URL
   : `http://backend:3001${API_BASE_URL}`
 
+const isPrivateHostname = (hostname: string) => {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return true
+  if (/^10\./.test(hostname)) return true
+  if (/^192\.168\./.test(hostname)) return true
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true
+  return false
+}
+
 const normalizeSiteOrigin = (value?: string | null) => {
   if (!value) return null
   const trimmed = value.trim()
@@ -23,7 +31,11 @@ const normalizeSiteOrigin = (value?: string | null) => {
     ? trimmed
     : `https://${trimmed}`
   try {
-    return new URL(withProtocol).origin
+    const url = new URL(withProtocol)
+    if (url.protocol === 'http:' && !isPrivateHostname(url.hostname)) {
+      url.protocol = 'https:'
+    }
+    return url.origin
   } catch {
     return null
   }
