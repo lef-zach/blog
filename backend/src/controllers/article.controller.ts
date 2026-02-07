@@ -28,6 +28,13 @@ export const createArticle = async (req: AuthRequest, res: Response, next: NextF
   }
 };
 
+const stripShortLinkFields = (article: any) => {
+  const { shortCode, shortClicks, shortLastHitAt, shortLinkEvents, ...rest } = article;
+  return rest;
+};
+
+const isAdminRequest = (req: AuthRequest) => req.user?.role === 'ADMIN';
+
 export const getArticles = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedQuery = queryArticlesSchema.parse(req.query);
@@ -38,7 +45,27 @@ export const getArticles = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     const result = await articleService.getArticles(validatedQuery);
-    res.json({ data: result });
+    if (isAdminRequest(req)) {
+      const articlesWithCodes = await Promise.all(
+        result.articles.map(async (article: any) => {
+          if (!article.shortCode) {
+            const shortCode = await articleService.ensureShortCode(article.id, article.shortCode);
+            return { ...article, shortCode };
+          }
+          return article;
+        })
+      );
+
+      res.json({ data: { ...result, articles: articlesWithCodes } });
+      return;
+    }
+
+    res.json({
+      data: {
+        ...result,
+        articles: result.articles.map(stripShortLinkFields),
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -49,7 +76,13 @@ export const getArticleBySlug = async (req: AuthRequest, res: Response, next: Ne
     const { slug } = req.params;
     const userId = req.user?.userId;
     const article = await articleService.getArticleBySlug(slug, userId);
-    res.json({ data: article });
+    if (isAdminRequest(req)) {
+      const shortCode = await articleService.ensureShortCode(article.id, article.shortCode);
+      res.json({ data: { ...article, shortCode } });
+      return;
+    }
+
+    res.json({ data: stripShortLinkFields(article) });
   } catch (error) {
     next(error);
   }

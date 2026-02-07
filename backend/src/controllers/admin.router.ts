@@ -21,6 +21,9 @@ router.get('/stats', adminController.getStats);
 // Analytics
 router.get('/analytics', adminController.getAnalytics);
 
+// Short link analytics
+router.get('/articles/:id/shortlinks', adminController.getShortLinkStats);
+
 // Users
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUser);

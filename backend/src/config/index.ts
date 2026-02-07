@@ -30,4 +30,11 @@ export const config = {
     maxFileSize: 20 * 1024 * 1024, // 20MB
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'],
   },
+
+  shortLinks: {
+    hashSalt: process.env.SHORTLINK_HASH_SALT || process.env.JWT_SECRET || 'change-me',
+    codeLength: parseInt(process.env.SHORTLINK_CODE_LENGTH || '6', 10),
+    eventRetentionDays: parseInt(process.env.SHORTLINK_RETENTION_DAYS || '90', 10),
+    referrerLimit: parseInt(process.env.SHORTLINK_REFERRER_LIMIT || '10', 10),
+  },
 };

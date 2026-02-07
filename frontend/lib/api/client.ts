@@ -30,6 +30,7 @@ const articleSchema = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string(),
+  shortCode: z.string().optional().nullable(),
   excerpt: z.string(),
   content: z.string(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
@@ -44,6 +45,8 @@ const articleSchema = z.object({
   featuredImageSize: z.enum(['S', 'M', 'B']).optional().nullable(),
   metaDescription: z.string().nullable(),
   views: z.number().optional(),
+  shortClicks: z.number().optional(),
+  shortLastHitAt: z.string().optional().nullable(),
   author: z.object({
     id: z.string(),
     name: z.string(),
@@ -640,6 +643,18 @@ export class ApiClient {
       totalPapers: number;
       totalViews: number;
     }>('/admin/stats');
+    return response;
+  }
+
+  async getShortLinkStats(articleId: string) {
+    const response = await this.request<{
+      shortCode?: string | null;
+      shortClicks?: number;
+      shortLastHitAt?: string | null;
+      recentClicks: number;
+      topReferrers: { domain: string; count: number }[];
+      retentionDays: number;
+    }>(`/admin/articles/${articleId}/shortlinks`);
     return response;
   }
 

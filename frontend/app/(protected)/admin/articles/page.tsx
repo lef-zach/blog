@@ -10,6 +10,7 @@ import {
   Edit,
   Trash2,
   Eye,
+  Link2,
   Search,
   Filter,
   MoreVertical,
@@ -37,6 +38,8 @@ interface Article {
   createdAt: string;
   updatedAt: string;
   views: number;
+  shortCode?: string | null;
+  shortClicks?: number;
   author: {
     id: string;
     name: string;
@@ -101,6 +104,22 @@ export default function ArticlesPage() {
         {config.label}
       </span>
     );
+  };
+
+  const getShortUrl = (code: string) => {
+    if (typeof window === 'undefined') {
+      return `/s/${code}`;
+    }
+    return `${window.location.origin}/s/${code}`;
+  };
+
+  const copyShortUrl = (code: string) => {
+    const shortUrl = getShortUrl(code);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(shortUrl);
+      return;
+    }
+    window.prompt('Copy short URL', shortUrl);
   };
 
   return (
@@ -199,6 +218,21 @@ export default function ArticlesPage() {
                           <Eye className="h-3 w-3" />
                           {article.views} views
                         </span>
+                        {article.shortCode && (
+                          <span className="flex items-center gap-1">
+                            <Link2 className="h-3 w-3" />
+                            <button
+                              type="button"
+                              className="text-primary hover:underline"
+                              onClick={() => copyShortUrl(article.shortCode as string)}
+                            >
+                              /s/{article.shortCode}
+                            </button>
+                            {typeof article.shortClicks === 'number' && (
+                              <span className="text-muted-foreground">({article.shortClicks})</span>
+                            )}
+                          </span>
+                        )}
                         {article.tags.length > 0 && (
                           <span className="flex items-center gap-1">
                             {article.tags.slice(0, 3).map((tag) => (

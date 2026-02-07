@@ -8,6 +8,7 @@ import { paperRouter } from './controllers/paper.controller';
 import { adminRouter } from './controllers/admin.router';
 import { profileRouter } from './controllers/profile.router';
 import { newsletterRouter } from './controllers/newsletter.router';
+import { shortlinkRouter } from './controllers/shortlink.router';
 import { errorHandler } from './middleware/error';
 import { apiLimiter } from './middleware/rateLimit';
 import { validateOrigin } from './middleware/origin';
@@ -90,6 +91,9 @@ app.use(validateOrigin);
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Short links
+app.use('/s', shortlinkRouter);
 
 // API routes
 app.use('/api/v1/auth', authRouter);

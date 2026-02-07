@@ -15,7 +15,9 @@ import {
   Tag,
   Image as ImageIcon,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Copy,
+  Link2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +30,9 @@ interface Article {
   id?: string;
   title: string;
   slug: string;
+  shortCode?: string | null;
+  shortClicks?: number;
+  shortLastHitAt?: string | null;
   excerpt: string;
   content: string;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
@@ -39,6 +44,15 @@ interface Article {
   featuredImageSize?: 'S' | 'M' | 'B';
   metaDescription?: string;
 }
+
+type ShortLinkStats = {
+  shortCode?: string | null;
+  shortClicks?: number;
+  shortLastHitAt?: string | null;
+  recentClicks: number;
+  topReferrers: { domain: string; count: number }[];
+  retentionDays: number;
+};
 
 export default function ArticleEditorPage() {
   const router = useRouter();
@@ -61,6 +75,9 @@ export default function ArticleEditorPage() {
   const [success, setSuccess] = useState('');
   const [newTag, setNewTag] = useState('');
   const [featuredImageError, setFeaturedImageError] = useState('');
+  const [shortLinkStats, setShortLinkStats] = useState<ShortLinkStats | null>(null);
+  const [shortLinkLoading, setShortLinkLoading] = useState(false);
+  const [shortLinkError, setShortLinkError] = useState('');
 
   const fetchArticle = async () => {
     if (!isEditing) return;
@@ -87,8 +104,26 @@ export default function ArticleEditorPage() {
     }
   };
 
+  const fetchShortLinkStats = async () => {
+    if (!isEditing) return;
+    try {
+      setShortLinkLoading(true);
+      setShortLinkError('');
+      const response = await apiClient.getShortLinkStats(params.id as string);
+      setShortLinkStats(response.data as ShortLinkStats);
+    } catch (err: any) {
+      setShortLinkError(err.message || 'Failed to load short link stats');
+    } finally {
+      setShortLinkLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchArticle();
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchShortLinkStats();
   }, [params.id]);
 
   const handleFeaturedImageUpload = (file: File | null) => {
@@ -127,6 +162,22 @@ export default function ArticleEditorPage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+  };
+
+  const getShortUrl = (code: string) => {
+    if (typeof window === 'undefined') {
+      return `/s/${code}`;
+    }
+    return `${window.location.origin}/s/${code}`;
+  };
+
+  const copyShortUrl = (code: string) => {
+    const shortUrl = getShortUrl(code);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(shortUrl);
+      return;
+    }
+    window.prompt('Copy short URL', shortUrl);
   };
 
   const handleTitleChange = (value: string) => {
@@ -508,6 +559,78 @@ export default function ArticleEditorPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {isEditing && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="h-5 w-5" />
+                    Short Link
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {shortLinkLoading && (
+                    <p className="text-sm text-muted-foreground">Loading short link stats...</p>
+                  )}
+                  {shortLinkError && (
+                    <p className="text-sm text-destructive">{shortLinkError}</p>
+                  )}
+                  {!shortLinkLoading && !shortLinkError && (() => {
+                    const shortCode = shortLinkStats?.shortCode || article.shortCode;
+
+                    if (!shortCode) {
+                      return (
+                        <p className="text-sm text-muted-foreground">
+                          Publish the article to generate a short link.
+                        </p>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">/s/{shortCode}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyShortUrl(shortCode)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Total clicks: {shortLinkStats?.shortClicks ?? article.shortClicks ?? 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Last hit:{' '}
+                          {shortLinkStats?.shortLastHitAt
+                            ? new Date(shortLinkStats.shortLastHitAt).toLocaleString()
+                            : 'Never'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Last {shortLinkStats?.retentionDays ?? 90} days: {shortLinkStats?.recentClicks ?? 0}
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold">Top referrers</p>
+                          {shortLinkStats?.topReferrers?.length ? (
+                            <div className="mt-2 space-y-1">
+                              {shortLinkStats.topReferrers.map((ref) => (
+                                <div key={ref.domain} className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{ref.domain}</span>
+                                  <span>{ref.count}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">No referrers yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
 
             {/* SEO */}
             <Card>

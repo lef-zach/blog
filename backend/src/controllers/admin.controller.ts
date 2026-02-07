@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { config } from '../config';
 import { AppError } from '../utils/error.util';
 import bcrypt from 'bcrypt';
 
@@ -123,6 +124,75 @@ export const adminController = {
       });
     } catch (error: any) {
       throw new AppError(500, 'ANALYTICS_ERROR', 'Failed to fetch analytics');
+    }
+  },
+
+  async getShortLinkStats(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const article = await prisma.article.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          shortCode: true,
+          shortClicks: true,
+          shortLastHitAt: true,
+        },
+      });
+
+      if (!article) {
+        throw new AppError(404, 'ARTICLE_NOT_FOUND', 'Article not found');
+      }
+
+      const retentionDays = config.shortLinks.eventRetentionDays;
+      const since = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+
+      const referrerLimit = Number.isFinite(config.shortLinks.referrerLimit) && config.shortLinks.referrerLimit > 0
+        ? config.shortLinks.referrerLimit
+        : 10;
+
+      const referrers = await prisma.shortLinkEvent.groupBy({
+        by: ['referrerDomain'],
+        where: {
+          articleId: id,
+          createdAt: { gte: since },
+        },
+        _count: {
+          referrerDomain: true,
+        },
+        orderBy: {
+          _count: {
+            referrerDomain: 'desc',
+          },
+        },
+        take: referrerLimit,
+      });
+
+      const recentClicks = await prisma.shortLinkEvent.count({
+        where: {
+          articleId: id,
+          createdAt: { gte: since },
+        },
+      });
+
+      res.json({
+        data: {
+          shortCode: article.shortCode,
+          shortClicks: article.shortClicks,
+          shortLastHitAt: article.shortLastHitAt,
+          recentClicks,
+          topReferrers: referrers.map((ref) => ({
+            domain: ref.referrerDomain || 'direct',
+            count: ref._count.referrerDomain,
+          })),
+          retentionDays,
+        },
+      });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'SHORTLINK_STATS_ERROR', 'Failed to fetch short link stats');
     }
   },
 

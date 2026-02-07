@@ -1,10 +1,15 @@
+import crypto from 'crypto';
 import { prisma } from '../config/database';
+import { config } from '../config';
 import { AppError } from '../middleware/error';
 import { redis } from '../config/redis';
 
 export class ArticleService {
+  private lastShortLinkPruneAt: number | null = null;
+
   async createArticle(data: any, authorId: string) {
     const slug = data.slug || this.generateSlug(data.title);
+    const shortCode = await this.generateUniqueShortCode();
 
     // Check if slug exists
     const existing = await prisma.article.findUnique({ where: { slug } });
@@ -19,6 +24,7 @@ export class ArticleService {
       data: {
         title: data.title,
         slug,
+        shortCode,
         excerpt: data.excerpt || this.generateExcerpt(data.content),
         content: data.content,
         featuredImage: data.featuredImage,
@@ -152,6 +158,35 @@ export class ArticleService {
     return article;
   }
 
+  async getArticleByShortCode(shortCode: string) {
+    return prisma.article.findUnique({
+      where: { shortCode },
+      select: {
+        id: true,
+        slug: true,
+        status: true,
+        visibility: true,
+        shortCode: true,
+      },
+    });
+  }
+
+  async ensureShortCode(articleId: string, currentCode?: string | null) {
+    if (currentCode) {
+      return currentCode;
+    }
+
+    const shortCode = await this.generateUniqueShortCode();
+
+    const updated = await prisma.article.update({
+      where: { id: articleId },
+      data: { shortCode },
+      select: { shortCode: true },
+    });
+
+    return updated.shortCode;
+  }
+
   async updateArticle(id: string, data: any, userId: string, isAdmin: boolean) {
     const article = await prisma.article.findUnique({ where: { id } });
     if (!article) {
@@ -244,6 +279,10 @@ export class ArticleService {
       status: data.status,
     };
 
+    if (!article.shortCode) {
+      updateData.shortCode = await this.generateUniqueShortCode();
+    }
+
     if (data.status === 'PUBLISHED') {
       updateData.publishedAt = new Date();
     }
@@ -270,11 +309,88 @@ export class ArticleService {
     return updated;
   }
 
+  async recordShortLinkHit(articleId: string, referrerDomain: string | null, ipHash: string | null) {
+    const now = new Date();
+    const pruneBefore = this.getShortLinkPruneBefore();
+
+    await prisma.$transaction([
+      prisma.article.update({
+        where: { id: articleId },
+        data: {
+          shortClicks: { increment: 1 },
+          shortLastHitAt: now,
+        },
+      }),
+      prisma.shortLinkEvent.create({
+        data: {
+          articleId,
+          referrerDomain,
+          ipHash,
+        },
+      }),
+      ...(pruneBefore
+        ? [
+            prisma.shortLinkEvent.deleteMany({
+              where: {
+                createdAt: { lt: pruneBefore },
+              },
+            }),
+          ]
+        : []),
+    ]);
+  }
+
   private generateSlug(title: string): string {
     return title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+  }
+
+  private generateShortCode(length = config.shortLinks.codeLength): string {
+    const safeLength = Number.isFinite(length) && length > 0 ? length : 6;
+    const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const bytes = crypto.randomBytes(safeLength);
+    let code = '';
+
+    for (let i = 0; i < safeLength; i += 1) {
+      code += alphabet[bytes[i] % alphabet.length];
+    }
+
+    return code;
+  }
+
+  private async generateUniqueShortCode(): Promise<string> {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const shortCode = this.generateShortCode();
+      const existing = await prisma.article.findUnique({
+        where: { shortCode },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return shortCode;
+      }
+    }
+
+    throw new AppError(500, 'SHORTLINK_CODE_FAILED', 'Failed to generate a unique short code');
+  }
+
+  private getShortLinkPruneBefore() {
+    const now = Date.now();
+    const lastPrune = this.lastShortLinkPruneAt;
+    const shouldPrune = !lastPrune || now - lastPrune > 60 * 60 * 1000;
+
+    if (!shouldPrune) {
+      return null;
+    }
+
+    this.lastShortLinkPruneAt = now;
+    const retentionDays = Number.isFinite(config.shortLinks.eventRetentionDays)
+      && config.shortLinks.eventRetentionDays > 0
+      ? config.shortLinks.eventRetentionDays
+      : 90;
+    return new Date(now - retentionDays * 24 * 60 * 60 * 1000);
   }
 
   private generateExcerpt(content: string, length = 160): string {
