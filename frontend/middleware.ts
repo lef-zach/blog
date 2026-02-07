@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths that don't require authentication
-  const publicPaths = ['/', '/login', '/register', '/blog', '/papers', '/about', '/s', '/api/health', '/api/proxy'];
+  const publicPaths = ['/', '/login', '/register', '/blog', '/papers', '/about', '/s', '/opengraph-image', '/api/health', '/api/proxy'];
 
   // Check if the path is public
   const isPublicPath = publicPaths.some(path => {
