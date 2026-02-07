@@ -39,6 +39,15 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
+    # Short links
+    location /s/ {
+        proxy_pass http://backend:3001/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }
 ```
 
@@ -49,6 +58,14 @@ In production, do not expose database or Redis ports.
 - PostgreSQL `5432`: keep internal only
 - Redis `6379`: keep internal only
 - Expose only Nginx (80/443). Backend/frontend should stay internal.
+
+## Backups & Uploads
+
+Backups and uploads are stored on the host to persist across container rebuilds:
+
+```bash
+mkdir -p backups uploads
+```
 
 If you need to troubleshoot, exec into the containers instead of opening host ports:
 

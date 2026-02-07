@@ -57,6 +57,14 @@ List all published articles.
 ### GET /articles/:slug
 Get a single article by slug.
 
+### GET /articles/:slug/featured-image
+Returns the featured image for a published, public article.
+*   **Response**: `200 OK` with image bytes or `302` redirect to the hosted image.
+
+### GET /s/:code
+Short-link redirect (outside `/api/v1`).
+*   **Response**: `301` to `/blog/:slug` if the article is published and public.
+
 ### GET /papers
 List Google Scholar papers.
 
@@ -74,6 +82,52 @@ Triggers a background sync with Google Scholar.
 
 ### GET /admin/subscribers
 Lists all newsletter subscribers.
+
+### Backups (Admin)
+
+#### GET /admin/backups
+List backups.
+
+#### POST /admin/backups
+Create a backup job.
+*   **Body**:
+    ```json
+    {
+      "includeDb": true,
+      "includeUploads": true,
+      "includeEnv": true,
+      "includeCerts": true,
+      "encrypt": false,
+      "passphrase": "optional"
+    }
+    ```
+*   **Response**: `202 Accepted` with `{ "data": { "jobId": "..." } }`
+
+#### GET /admin/backups/jobs/:id
+Get backup/restore job status.
+
+#### GET /admin/backups/:id/download
+Download the backup archive.
+
+#### GET /admin/backups/:id/bundle
+Download a restore bundle (archive + metadata + restore instructions).
+
+#### POST /admin/backups/:id/restore
+Start a restore job.
+*   **Body**:
+    ```json
+    {
+      "mode": "staged",
+      "restoreDb": true,
+      "restoreUploads": true,
+      "restoreEnv": false,
+      "restoreCerts": false,
+      "passphrase": "optional"
+    }
+    ```
+
+#### DELETE /admin/backups/:id
+Delete a backup.
 
 ---
 
