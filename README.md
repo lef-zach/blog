@@ -148,6 +148,15 @@ Short links are auto-generated for blog posts and are available at `/s/<code>`.
 *   This is used to build the full short URL in the admin UI.
 *   Add extra domains in **Additional Domains** (comma-separated) to offer multiple short-link bases.
 
+## Social Previews
+
+If previews fail on social platforms, ensure:
+*   `siteUrl` is set to your canonical HTTPS domain.
+*   `SEO → ogImage` is a publicly reachable HTTPS image (1200x630 recommended).
+*   Cloudflare allows verified bots (or bypass WAF for known preview user agents).
+
+The app also provides a default Open Graph image at `/opengraph-image`.
+
 **Short-link env vars** (backend)
 ```env
 SHORTLINK_HASH_SALT="change-me"

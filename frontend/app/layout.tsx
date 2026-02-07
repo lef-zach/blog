@@ -15,6 +15,20 @@ const INTERNAL_API_BASE = API_BASE_URL.startsWith('http')
   ? API_BASE_URL
   : `http://backend:3001${API_BASE_URL}`
 
+const normalizeSiteOrigin = (value?: string | null) => {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://${trimmed}`
+  try {
+    return new URL(withProtocol).origin
+  } catch {
+    return null
+  }
+}
+
 type PublicSettings = {
   siteName?: string
   siteDescription?: string
@@ -50,30 +64,37 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogImage = settings?.seo?.ogImage
 
   let metadataBase: URL | undefined
+  let canonicalUrl: string | undefined
   try {
-    metadataBase = new URL(siteUrl)
+    const normalizedOrigin = normalizeSiteOrigin(siteUrl)
+    if (normalizedOrigin) {
+      metadataBase = new URL(normalizedOrigin)
+      canonicalUrl = new URL('/', metadataBase).toString()
+    }
   } catch {
     metadataBase = undefined
   }
+
+  const defaultOgImage = ogImage || '/opengraph-image'
 
   return {
     metadataBase,
     title: metaTitle,
     description: metaDescription,
-    alternates: metadataBase ? { canonical: metadataBase } : undefined,
+    alternates: canonicalUrl ? { canonical: canonicalUrl } : undefined,
     openGraph: {
       title: metaTitle,
       description: metaDescription,
-      url: siteUrl,
+      url: canonicalUrl || siteUrl,
       siteName,
       type: 'website',
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: defaultOgImage ? [{ url: defaultOgImage }] : undefined,
     },
     twitter: {
-      card: ogImage ? 'summary_large_image' : 'summary',
+      card: defaultOgImage ? 'summary_large_image' : 'summary',
       title: metaTitle,
       description: metaDescription,
-      images: ogImage ? [ogImage] : undefined,
+      images: defaultOgImage ? [defaultOgImage] : undefined,
     },
   }
 }
