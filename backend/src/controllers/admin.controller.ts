@@ -149,17 +149,19 @@ export const adminController = {
       }
 
       res.json({
-        overview: {
-          totalViews,
-          uniqueVisitors,
-          totalArticles,
-          totalPapers,
-          viewsChange: 12, // Simulated
-          visitorsChange: 8, // Simulated
+        data: {
+          overview: {
+            totalViews,
+            uniqueVisitors,
+            totalArticles,
+            totalPapers,
+            viewsChange: 12, // Simulated
+            visitorsChange: 8, // Simulated
+          },
+          articles: topArticles,
+          papers: topPapers,
+          traffic,
         },
-        articles: topArticles,
-        papers: topPapers,
-        traffic,
       });
     } catch (error: any) {
       throw new AppError(500, 'ANALYTICS_ERROR', 'Failed to fetch analytics');
