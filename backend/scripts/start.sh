@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 echo "Starting application..."
 
@@ -9,10 +10,10 @@ until pg_isready -h postgres -p 5432 -U blog_app; do
 done
 echo "Database is ready!"
 
-# Initialize database schema
-echo "Initializing database schema..."
-npx prisma db push --skip-generate
-echo "Database schema initialized!"
+# Apply database migrations
+echo "Applying database migrations..."
+npx prisma migrate deploy
+echo "Database migrations applied!"
 
 # Start application
 echo "Starting Node.js server..."

@@ -55,6 +55,7 @@ export default function ArticlesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [error, setError] = useState('');
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
 
   const fetchArticles = async () => {
     try {
@@ -74,6 +75,19 @@ export default function ArticlesPage() {
   useEffect(() => {
     fetchArticles();
   }, [searchQuery, statusFilter]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await apiClient.getPublicSettings();
+        setSiteUrl(response.data?.siteUrl || null);
+      } catch (err) {
+        console.error('Failed to fetch site settings for short links', err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this article?')) {
@@ -107,10 +121,25 @@ export default function ArticlesPage() {
   };
 
   const getShortUrl = (code: string) => {
-    if (typeof window === 'undefined') {
-      return `/s/${code}`;
-    }
-    return `${window.location.origin}/s/${code}`;
+    const normalizeSiteUrl = (value?: string | null) => {
+      if (!value) return null;
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? trimmed
+        : `https://${trimmed}`;
+      try {
+        return new URL(withProtocol).origin;
+      } catch {
+        return null;
+      }
+    };
+
+    const siteOrigin = normalizeSiteUrl(siteUrl);
+    const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = siteOrigin || fallbackOrigin;
+
+    return origin ? `${origin}/s/${code}` : `/s/${code}`;
   };
 
   const copyShortUrl = (code: string) => {

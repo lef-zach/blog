@@ -78,6 +78,7 @@ export default function ArticleEditorPage() {
   const [shortLinkStats, setShortLinkStats] = useState<ShortLinkStats | null>(null);
   const [shortLinkLoading, setShortLinkLoading] = useState(false);
   const [shortLinkError, setShortLinkError] = useState('');
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
 
   const fetchArticle = async () => {
     if (!isEditing) return;
@@ -126,6 +127,19 @@ export default function ArticleEditorPage() {
     fetchShortLinkStats();
   }, [params.id]);
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await apiClient.getPublicSettings();
+        setSiteUrl(response.data?.siteUrl || null);
+      } catch (err) {
+        console.error('Failed to fetch site settings for short links', err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   const handleFeaturedImageUpload = (file: File | null) => {
     setFeaturedImageError('');
     if (!file) return;
@@ -165,10 +179,25 @@ export default function ArticleEditorPage() {
   };
 
   const getShortUrl = (code: string) => {
-    if (typeof window === 'undefined') {
-      return `/s/${code}`;
-    }
-    return `${window.location.origin}/s/${code}`;
+    const normalizeSiteUrl = (value?: string | null) => {
+      if (!value) return null;
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const withProtocol = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? trimmed
+        : `https://${trimmed}`;
+      try {
+        return new URL(withProtocol).origin;
+      } catch {
+        return null;
+      }
+    };
+
+    const siteOrigin = normalizeSiteUrl(siteUrl);
+    const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = siteOrigin || fallbackOrigin;
+
+    return origin ? `${origin}/s/${code}` : `/s/${code}`;
   };
 
   const copyShortUrl = (code: string) => {
