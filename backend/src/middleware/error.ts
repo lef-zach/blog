@@ -32,7 +32,7 @@ export const errorHandler = (
     return res.status(413).json({
       error: {
         code: 'PAYLOAD_TOO_LARGE',
-        message: 'Request payload is too large. Maximum allowed size is 10MB.',
+        message: 'Request payload is too large. Maximum allowed size is 20MB.',
       },
     });
   }
