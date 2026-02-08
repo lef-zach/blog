@@ -20,6 +20,9 @@ import { requestLogger } from './middleware/request-logger';
 
 const app: Application = express();
 
+// Trust first proxy (nginx) for X-Forwarded-For
+app.set('trust proxy', 1);
+
 app.use(requestId);
 app.use(requestLogger);
 
