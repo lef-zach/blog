@@ -377,7 +377,7 @@ export const backupService = {
     await writeJob(job);
 
     setImmediate(async () => {
-      const started = { ...job, status: 'running', updatedAt: new Date().toISOString() };
+      const started: BackupJob = { ...job, status: 'running', updatedAt: new Date().toISOString() };
       await writeJob(started);
       try {
         const result = await this.createBackup(jobId, options);
@@ -500,7 +500,7 @@ export const backupService = {
     await writeJob(job);
 
     setImmediate(async () => {
-      const started = { ...job, status: 'running', updatedAt: new Date().toISOString() };
+      const started: BackupJob = { ...job, status: 'running', updatedAt: new Date().toISOString() };
       await writeJob(started);
       try {
         const result = await this.restoreBackup(backupId, options);
