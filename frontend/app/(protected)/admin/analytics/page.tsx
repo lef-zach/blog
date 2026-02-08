@@ -175,9 +175,13 @@ export default function AnalyticsPage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-center py-12">
             <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-semibold">No analytics data available</h3>
+            <h3 className="mb-2 text-lg font-semibold">
+              {error ? 'Analytics unavailable' : 'No analytics data available'}
+            </h3>
             <p className="mb-4 text-center text-sm text-muted-foreground">
-              Analytics will be available once you have published content
+              {error
+                ? error
+                : 'Analytics will be available once you have published content'}
             </p>
             <Button onClick={fetchAnalytics}>
               <RefreshCw className="mr-2 h-4 w-4" />

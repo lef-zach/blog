@@ -77,6 +77,18 @@ export const getArticleBySlug = async (req: AuthRequest, res: Response, next: Ne
     const { slug } = req.params;
     const userId = req.user?.userId;
     const article = await articleService.getArticleBySlug(slug, userId);
+    const shouldTrackView =
+      !isAdminRequest(req) &&
+      article.status === 'PUBLISHED' &&
+      article.visibility === 'PUBLIC';
+
+    if (shouldTrackView) {
+      try {
+        await articleService.incrementArticleViews(article.id);
+      } catch {
+        // Ignore view tracking errors
+      }
+    }
     if (isAdminRequest(req)) {
       const shortCode = await articleService.ensureShortCode(article.id, article.shortCode);
       res.json({ data: { ...article, shortCode } });

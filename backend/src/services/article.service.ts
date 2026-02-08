@@ -171,6 +171,15 @@ export class ArticleService {
     });
   }
 
+  async incrementArticleViews(articleId: string) {
+    await prisma.article.update({
+      where: { id: articleId },
+      data: {
+        views: { increment: 1 },
+      },
+    });
+  }
+
   async getPublicFeaturedImageBySlug(slug: string) {
     return prisma.article.findFirst({
       where: {
