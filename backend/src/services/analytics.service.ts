@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import type { Request } from 'express';
-import maxmind, { CityResponse } from 'maxmind';
+import maxmind, { CityResponse, Reader } from 'maxmind';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { config } from '../config';
@@ -13,8 +13,8 @@ type GeoResult = {
 
 const botRegex = /bot|crawler|spider|crawling|facebookexternalhit|linkedinbot|twitterbot|slackbot|whatsapp|telegram|discordbot|curl|wget|python-requests/i;
 
-let maxmindReader: maxmind.Reader<CityResponse> | null = null;
-let maxmindInitPromise: Promise<maxmind.Reader<CityResponse> | null> | null = null;
+let maxmindReader: Reader<CityResponse> | null = null;
+let maxmindInitPromise: Promise<Reader<CityResponse> | null> | null = null;
 
 const getMaxmindReader = async () => {
   if (maxmindReader) return maxmindReader;
