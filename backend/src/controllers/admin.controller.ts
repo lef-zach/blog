@@ -90,9 +90,9 @@ export const adminController = {
     try {
       const { startDate, endDate } = req.query;
 
-      const where: any = {};
+      const where: any = { status: 'PUBLISHED' };
       if (startDate && endDate) {
-        where.createdAt = {
+        where.publishedAt = {
           gte: new Date(startDate as string),
           lte: new Date(endDate as string),
         };
@@ -104,9 +104,9 @@ export const adminController = {
         select: { views: true, slug: true, title: true, id: true },
       });
       const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
-      const uniqueVisitors = Math.floor(totalViews * 0.7);
+      const uniqueVisitors = totalViews;
 
-      const totalArticles = await prisma.article.count();
+      const totalArticles = await prisma.article.count({ where: { status: 'PUBLISHED' } });
       const totalPapers = await prisma.paper.count();
 
       // Top Pages (Articles)
@@ -117,7 +117,7 @@ export const adminController = {
           id: article.id,
           title: article.title,
           views: article.views || 0,
-          change: Math.floor(Math.random() * 20) - 5, // Simulated change
+          change: 0,
         }));
 
       // Top Papers
@@ -131,22 +131,10 @@ export const adminController = {
         id: paper.id,
         title: paper.title,
         citations: paper.citations || 0,
-        change: Math.floor(Math.random() * 10), // Simulated
+        change: 0,
       }));
 
-      // Views over time (Traffic)
-      const traffic = [];
-      const today = new Date();
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dailyViews = Math.floor(Math.random() * 100) + 50;
-        traffic.push({
-          date: date.toISOString().split('T')[0],
-          views: dailyViews,
-          visitors: Math.floor(dailyViews * 0.7),
-        });
-      }
+      const traffic: { date: string; views: number; visitors: number }[] = [];
 
       res.json({
         data: {
@@ -155,8 +143,8 @@ export const adminController = {
             uniqueVisitors,
             totalArticles,
             totalPapers,
-            viewsChange: 12, // Simulated
-            visitorsChange: 8, // Simulated
+            viewsChange: 0,
+            visitorsChange: 0,
           },
           articles: topArticles,
           papers: topPapers,
