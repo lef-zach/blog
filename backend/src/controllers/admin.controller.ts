@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import path from 'path';
 import fs from 'fs/promises';
 import { backupService } from '../services/backup.service';
+import { analyticsService } from '../services/analytics.service';
 
 const prisma = new PrismaClient();
 
@@ -89,38 +90,45 @@ export const adminController = {
   async getAnalytics(req: Request, res: Response) {
     try {
       const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(`${startDate}T00:00:00.000Z`) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(`${endDate}T00:00:00.000Z`) : new Date();
 
-      const where: any = { status: 'PUBLISHED' };
-      if (startDate && endDate) {
-        where.publishedAt = {
-          gte: new Date(startDate as string),
-          lte: new Date(endDate as string),
-        };
-      }
+      const startDay = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+      const endDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
 
-      // Get total views and stats
-      const articles = await prisma.article.findMany({
-        where,
-        select: { views: true, slug: true, title: true, id: true },
+      const dailySite = await prisma.dailySiteAnalytics.findMany({
+        where: { date: { gte: startDay, lte: endDay } },
+        orderBy: { date: 'asc' },
       });
-      const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
-      const uniqueVisitors = totalViews;
+
+      const totalViews = dailySite.reduce((sum, day) => sum + (day.views || 0), 0);
+      const uniqueVisitors = dailySite.reduce((sum, day) => sum + (day.uniqueVisitors || 0), 0);
 
       const totalArticles = await prisma.article.count({ where: { status: 'PUBLISHED' } });
       const totalPapers = await prisma.paper.count();
 
-      // Top Pages (Articles)
-      const topArticles = articles
-        .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 5)
-        .map((article) => ({
-          id: article.id,
-          title: article.title,
-          views: article.views || 0,
-          change: 0,
-        }));
+      const topArticleAgg = await prisma.dailyArticleAnalytics.groupBy({
+        by: ['articleId'],
+        where: { date: { gte: startDay, lte: endDay } },
+        _sum: { views: true },
+        orderBy: { _sum: { views: 'desc' } },
+        take: 5,
+      });
 
-      // Top Papers
+      const articleIds = topArticleAgg.map((item) => item.articleId);
+      const articleTitles = await prisma.article.findMany({
+        where: { id: { in: articleIds } },
+        select: { id: true, title: true },
+      });
+      const articleTitleMap = new Map(articleTitles.map((article) => [article.id, article.title]));
+
+      const topArticles = topArticleAgg.map((item) => ({
+        id: item.articleId,
+        title: articleTitleMap.get(item.articleId) || 'Untitled',
+        views: item._sum.views || 0,
+        change: 0,
+      }));
+
       const papers = await prisma.paper.findMany({
         take: 5,
         orderBy: { citations: 'desc' },
@@ -134,7 +142,52 @@ export const adminController = {
         change: 0,
       }));
 
+      const trafficMap = new Map(
+        dailySite.map((day) => [day.date.toISOString().split('T')[0], day])
+      );
+
       const traffic: { date: string; views: number; visitors: number }[] = [];
+      for (let d = new Date(startDay); d <= endDay; d.setUTCDate(d.getUTCDate() + 1)) {
+        const key = d.toISOString().split('T')[0];
+        const entry = trafficMap.get(key);
+        traffic.push({
+          date: key,
+          views: entry?.views || 0,
+          visitors: entry?.uniqueVisitors || 0,
+        });
+      }
+
+      const topCountries = await prisma.pageViewEvent.groupBy({
+        by: ['country'],
+        where: { createdAt: { gte: startDay, lte: endDay } },
+        _count: { country: true },
+        orderBy: { _count: { country: 'desc' } },
+        take: 5,
+      });
+
+      const topRegions = await prisma.pageViewEvent.groupBy({
+        by: ['region'],
+        where: { createdAt: { gte: startDay, lte: endDay } },
+        _count: { region: true },
+        orderBy: { _count: { region: 'desc' } },
+        take: 5,
+      });
+
+      const topCities = await prisma.pageViewEvent.groupBy({
+        by: ['city'],
+        where: { createdAt: { gte: startDay, lte: endDay } },
+        _count: { city: true },
+        orderBy: { _count: { city: 'desc' } },
+        take: 5,
+      });
+
+      const topReferrers = await prisma.pageViewEvent.groupBy({
+        by: ['referrerDomain'],
+        where: { createdAt: { gte: startDay, lte: endDay } },
+        _count: { referrerDomain: true },
+        orderBy: { _count: { referrerDomain: 'desc' } },
+        take: 5,
+      });
 
       res.json({
         data: {
@@ -149,6 +202,24 @@ export const adminController = {
           articles: topArticles,
           papers: topPapers,
           traffic,
+          geo: {
+            countries: topCountries.map((item) => ({
+              name: item.country || 'Unknown',
+              count: item._count.country,
+            })),
+            regions: topRegions.map((item) => ({
+              name: item.region || 'Unknown',
+              count: item._count.region,
+            })),
+            cities: topCities.map((item) => ({
+              name: item.city || 'Unknown',
+              count: item._count.city,
+            })),
+          },
+          referrers: topReferrers.map((item) => ({
+            name: item.referrerDomain || 'direct',
+            count: item._count.referrerDomain,
+          })),
         },
       });
     } catch (error: any) {
@@ -366,6 +437,33 @@ export const adminController = {
       res.json({ data: { deleted: true } });
     } catch (error: any) {
       throw new AppError(500, 'BACKUP_DELETE_ERROR', 'Failed to delete backup');
+    }
+  },
+
+  async getAnalyticsIp(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      if (!config.analytics.allowIpDecrypt) {
+        throw new AppError(403, 'ANALYTICS_IP_DECRYPT_DISABLED', 'IP decryption is disabled');
+      }
+
+      const event = await prisma.pageViewEvent.findUnique({
+        where: { id },
+        select: { ipEncrypted: true },
+      });
+
+      if (!event?.ipEncrypted) {
+        throw new AppError(404, 'ANALYTICS_EVENT_NOT_FOUND', 'Analytics event not found');
+      }
+
+      const ip = analyticsService.decryptIpEncrypted(event.ipEncrypted);
+      res.json({ data: { ip } });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(500, 'ANALYTICS_IP_DECRYPT_ERROR', 'Failed to decrypt IP');
     }
   },
 

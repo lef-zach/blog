@@ -67,6 +67,22 @@ Backups and uploads are stored on the host to persist across container rebuilds:
 mkdir -p backups uploads
 ```
 
+## GeoIP (Optional)
+
+If you want city/region analytics without Cloudflare, download MaxMind GeoLite2:
+
+```bash
+cd backend
+MAXMIND_LICENSE_KEY=your_key ./scripts/download-maxmind.sh
+```
+
+Mount the DB into the backend container and set:
+
+```env
+ANALYTICS_GEO_PROVIDER=maxmind
+ANALYTICS_MAXMIND_DB_PATH=/app/data/GeoLite2-City.mmdb
+```
+
 If you need to troubleshoot, exec into the containers instead of opening host ports:
 
 ```bash

@@ -45,3 +45,6 @@ blog_30/
 # Backups
 /backups/
 /uploads/
+
+# GeoIP data
+/backend/data/

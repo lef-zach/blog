@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { GlobalSidebar } from '@/components/layout/global-sidebar'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { AnalyticsConsentBanner } from '@/components/analytics-consent-banner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
@@ -163,6 +164,7 @@ export default function RootLayout({
               </div>
               <Footer />
             </div>
+            <AnalyticsConsentBanner />
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -20,6 +20,7 @@ router.get('/stats', adminController.getStats);
 
 // Analytics
 router.get('/analytics', adminController.getAnalytics);
+router.get('/analytics/events/:id/ip', adminController.getAnalyticsIp);
 
 // Short link analytics
 router.get('/articles/:id/shortlinks', adminController.getShortLinkStats);

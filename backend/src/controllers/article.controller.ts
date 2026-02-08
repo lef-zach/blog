@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Response, NextFunction, Request } from 'express';
 import articleService from '../services/article.service';
+import { analyticsService } from '../services/analytics.service';
 import { createArticleSchema, updateArticleSchema, publishArticleSchema, queryArticlesSchema } from '../validators/article.validator';
 import { AuthRequest } from '../middleware/auth';
 import { authenticate, optionalAuthenticate, authorize } from '../middleware/auth';
@@ -84,9 +85,9 @@ export const getArticleBySlug = async (req: AuthRequest, res: Response, next: Ne
 
     if (shouldTrackView) {
       try {
-        await articleService.incrementArticleViews(article.id);
+        await analyticsService.recordArticleView(req, article.id);
       } catch {
-        // Ignore view tracking errors
+        // Ignore analytics errors
       }
     }
     if (isAdminRequest(req)) {

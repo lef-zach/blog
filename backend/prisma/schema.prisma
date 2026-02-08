@@ -58,6 +58,9 @@ model Article {
   tags            Tag[]
   versions        ArticleVersion[]
   shortLinkEvents ShortLinkEvent[]
+  pageViewEvents  PageViewEvent[]
+  dailyAnalytics  DailyArticleAnalytics[]
+  dailyUniqueVisitors DailyArticleUniqueVisitor[]
 
   @@index([slug])
   @@index([publishedAt])
@@ -75,6 +78,73 @@ model ShortLinkEvent {
   @@index([articleId])
   @@index([createdAt])
   @@index([referrerDomain])
+}
+
+model PageViewEvent {
+  id             String   @id @default(uuid())
+  articleId      String
+  ipHash         String
+  ipEncrypted    String?
+  country        String?
+  region         String?
+  city           String?
+  userAgent      String?
+  referrerDomain String?
+  createdAt      DateTime @default(now())
+  article        Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([createdAt])
+  @@index([country])
+}
+
+model DailyArticleAnalytics {
+  id             String   @id @default(uuid())
+  date           DateTime
+  articleId      String
+  views          Int      @default(0)
+  uniqueVisitors Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  article        Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([date, articleId])
+  @@index([date])
+  @@index([articleId])
+}
+
+model DailySiteAnalytics {
+  id             String   @id @default(uuid())
+  date           DateTime @unique
+  views          Int      @default(0)
+  uniqueVisitors Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([date])
+}
+
+model DailyArticleUniqueVisitor {
+  id        String   @id @default(uuid())
+  date      DateTime
+  articleId String
+  ipHash    String
+  createdAt DateTime @default(now())
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([date, articleId, ipHash])
+  @@index([date])
+  @@index([articleId])
+}
+
+model DailySiteUniqueVisitor {
+  id        String   @id @default(uuid())
+  date      DateTime
+  ipHash    String
+  createdAt DateTime @default(now())
+
+  @@unique([date, ipHash])
+  @@index([date])
 }
 
 model ArticleVersion {

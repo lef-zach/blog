@@ -129,6 +129,50 @@ Start a restore job.
 #### DELETE /admin/backups/:id
 Delete a backup.
 
+### Analytics (Admin)
+
+#### GET /admin/analytics
+Returns analytics for the given date range.
+
+**Query**:
+* `startDate=YYYY-MM-DD`
+* `endDate=YYYY-MM-DD`
+
+**Response**:
+```json
+{
+  "data": {
+    "overview": {
+      "totalViews": 0,
+      "uniqueVisitors": 0,
+      "totalArticles": 2,
+      "totalPapers": 10,
+      "viewsChange": 0,
+      "visitorsChange": 0
+    },
+    "articles": [
+      { "id": "...", "title": "...", "views": 12, "change": 0 }
+    ],
+    "papers": [
+      { "id": "...", "title": "...", "citations": 5, "change": 0 }
+    ],
+    "traffic": [
+      { "date": "2026-02-08", "views": 2, "visitors": 2 }
+    ],
+    "geo": {
+      "countries": [{ "name": "CY", "count": 2 }],
+      "regions": [{ "name": "Nicosia", "count": 1 }],
+      "cities": [{ "name": "Nicosia", "count": 1 }]
+    },
+    "referrers": [{ "name": "direct", "count": 2 }]
+  }
+}
+```
+
+#### GET /admin/analytics/events/:id/ip
+Decrypt the IP for a specific analytics event (only if enabled).
+*   Requires `ANALYTICS_ALLOW_IP_DECRYPT=true`
+
 ---
 
 ## Example Requests

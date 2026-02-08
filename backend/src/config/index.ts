@@ -38,6 +38,22 @@ export const config = {
     referrerLimit: parseInt(process.env.SHORTLINK_REFERRER_LIMIT || '10', 10),
   },
 
+  analytics: {
+    geoProvider: process.env.ANALYTICS_GEO_PROVIDER || 'cloudflare',
+    requireConsent: process.env.ANALYTICS_REQUIRE_CONSENT === 'true',
+    retentionDays: parseInt(process.env.ANALYTICS_RETENTION_DAYS || '90', 10),
+    ipHashSalt:
+      process.env.ANALYTICS_IP_HASH_SALT ||
+      process.env.SHORTLINK_HASH_SALT ||
+      process.env.JWT_SECRET ||
+      'change-me',
+    storeIpEncrypted: process.env.ANALYTICS_STORE_IP_ENCRYPTED === 'true',
+    ipEncryptionKey: process.env.ANALYTICS_IP_ENCRYPTION_KEY || '',
+    allowIpDecrypt: process.env.ANALYTICS_ALLOW_IP_DECRYPT === 'true',
+    maxmindDbPath: process.env.ANALYTICS_MAXMIND_DB_PATH || '',
+    excludeBots: process.env.ANALYTICS_EXCLUDE_BOTS !== 'false',
+  },
+
   backup: {
     dir: process.env.BACKUP_DIR || '/backups',
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10),

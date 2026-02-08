@@ -46,6 +46,7 @@ services:
       - ./frontend:/config/frontend:ro
       - ./nginx/certs:/config/nginx-certs:ro
       - ./uploads:/var/www/uploads
+      - ./backend/data:/app/data:ro
     networks:
       - blog-network
     restart: unless-stopped

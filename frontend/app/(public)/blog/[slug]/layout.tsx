@@ -95,6 +95,9 @@ const fetchArticleMetadata = async (slug: string): Promise<ArticleMetadata | nul
   try {
     const response = await fetch(`${INTERNAL_API_BASE}/articles/${slug}`, {
       next: { revalidate: 300 },
+      headers: {
+        'x-internal-request': '1',
+      },
     })
     if (!response.ok) return null
     const payload = await response.json()

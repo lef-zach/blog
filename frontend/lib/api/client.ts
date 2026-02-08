@@ -139,6 +139,12 @@ const analyticsSchema = z.object({
     views: z.number(),
     visitors: z.number(),
   })),
+  geo: z.object({
+    countries: z.array(z.object({ name: z.string(), count: z.number() })),
+    regions: z.array(z.object({ name: z.string(), count: z.number() })),
+    cities: z.array(z.object({ name: z.string(), count: z.number() })),
+  }).optional(),
+  referrers: z.array(z.object({ name: z.string(), count: z.number() })).optional(),
 });
 
 const backupMetadataSchema = z.object({

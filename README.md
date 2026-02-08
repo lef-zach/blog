@@ -157,6 +157,43 @@ If previews fail on social platforms, ensure:
 
 The app also provides a default Open Graph image at `/opengraph-image`.
 
+## Analytics & Privacy
+
+Analytics are **opt-in** when `NEXT_PUBLIC_ANALYTICS_REQUIRE_CONSENT=true`.
+Events are recorded on published article views only.
+
+**What is stored**
+*   Hashed IP (HMAC)
+*   Optional encrypted IP (if enabled)
+*   Country/region/city (via Cloudflare headers or MaxMind)
+*   Referrer domain + user agent
+
+**Retention**
+*   Controlled by `ANALYTICS_RETENTION_DAYS` (0 = forever)
+
+**Geo providers**
+*   `cloudflare` (default): country only
+*   `maxmind`: country/region/city (requires local DB)
+
+**Env vars** (backend)
+```env
+ANALYTICS_GEO_PROVIDER=cloudflare
+ANALYTICS_REQUIRE_CONSENT=true
+ANALYTICS_RETENTION_DAYS=90
+ANALYTICS_IP_HASH_SALT="change-me"
+ANALYTICS_STORE_IP_ENCRYPTED=false
+ANALYTICS_IP_ENCRYPTION_KEY=
+ANALYTICS_ALLOW_IP_DECRYPT=false
+ANALYTICS_MAXMIND_DB_PATH=/app/data/GeoLite2-City.mmdb
+ANALYTICS_EXCLUDE_BOTS=true
+```
+
+**MaxMind download**
+```bash
+cd backend
+MAXMIND_LICENSE_KEY=your_key ./scripts/download-maxmind.sh
+```
+
 **Short-link env vars** (backend)
 ```env
 SHORTLINK_HASH_SALT="change-me"

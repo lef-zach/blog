@@ -46,6 +46,12 @@ interface AnalyticsData {
     views: number;
     visitors: number;
   }[];
+  geo?: {
+    countries: { name: string; count: number }[];
+    regions: { name: string; count: number }[];
+    cities: { name: string; count: number }[];
+  };
+  referrers?: { name: string; count: number }[];
 }
 
 export default function AnalyticsPage() {
@@ -304,7 +310,7 @@ export default function AnalyticsPage() {
             <CardContent>
               {analytics.articles.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
-                  No articles published yet
+                  No article views yet
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -380,6 +386,110 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Top Referrers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analytics.referrers && analytics.referrers.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.referrers.map((ref) => (
+                    <div key={ref.name} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{ref.name}</span>
+                      <span className="font-semibold">{ref.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No referrers yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Top Countries
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analytics.geo?.countries && analytics.geo.countries.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.geo.countries.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="font-semibold">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No country data yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Top Regions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analytics.geo?.regions && analytics.geo.regions.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.geo.regions.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="font-semibold">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No region data yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Top Cities
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analytics.geo?.cities && analytics.geo.cities.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.geo.cities.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="font-semibold">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No city data yet
                 </div>
               )}
             </CardContent>
