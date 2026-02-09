@@ -26,6 +26,15 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+      {
         source: '/:path*',
         headers: [
           {
