@@ -52,7 +52,7 @@ export default function AboutPage() {
               </div>
               <div className="flex-1">
                 <h1 className="mb-8 text-4xl font-bold">{article.title}</h1>
-                <PostContentBoxes html={article.content} />
+                <PostContentBoxes html={article.content || ''} />
               </div>
             </div>
           ) : (
@@ -63,7 +63,7 @@ export default function AboutPage() {
                 </div>
               )}
               <h1 className="mb-8 text-4xl font-bold">{article.title}</h1>
-              <PostContentBoxes html={article.content} />
+              <PostContentBoxes html={article.content || ''} />
             </>
           )}
         </article>
