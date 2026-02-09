@@ -10,6 +10,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - blog-network
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -19,6 +20,7 @@ services:
       - redis_data:/data
     networks:
       - blog-network
+    restart: unless-stopped
 
   backend:
     build:

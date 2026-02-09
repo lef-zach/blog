@@ -99,7 +99,22 @@ export class ArticleService {
         skip,
         take: limit,
         orderBy: { [query.sort || 'createdAt']: query.order || 'desc' },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          status: true,
+          visibility: true,
+          publishedAt: true,
+          scheduledAt: true,
+          readingTime: true,
+          views: true,
+          shortCode: true,
+          shortClicks: true,
+          shortLastHitAt: true,
+          createdAt: true,
+          updatedAt: true,
           author: {
             select: { id: true, name: true, email: true, avatar: true },
           },

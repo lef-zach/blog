@@ -32,7 +32,7 @@ const articleSchema = z.object({
   slug: z.string(),
   shortCode: z.string().optional().nullable(),
   excerpt: z.string(),
-  content: z.string(),
+  content: z.string().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
   publishedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -40,7 +40,7 @@ const articleSchema = z.object({
   readingTime: z.number().optional(),
   tags: z.array(z.union([z.string(), z.object({ name: z.string() })])), // Can be strings or objects
   category: z.union([z.string(), z.object({ name: z.string() })]).nullable(), // Can be string or object
-  featuredImage: z.string().nullable(),
+  featuredImage: z.string().nullable().optional(),
   featuredImageLayout: z.enum(['BANNER', 'PORTRAIT']).optional().nullable(),
   featuredImageSize: z.enum(['S', 'M', 'B']).optional().nullable(),
   metaDescription: z.string().nullable(),
