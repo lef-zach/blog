@@ -154,9 +154,30 @@ export class PaperService {
         select: { scholarUrl: true },
       });
       if (!user?.scholarUrl) {
-        throw new AppError(400, 'NO_SCHOLAR_URL', 'No Google Scholar URL provided or stored');
+        const existingPaperWithScholarLink = await prisma.paper.findFirst({
+          where: {
+            userId,
+            url: {
+              contains: 'scholar.google.com/citations?',
+            },
+          },
+          select: { url: true },
+          orderBy: { updatedAt: 'desc' },
+        });
+
+        const inferredMatch = existingPaperWithScholarLink?.url?.match(/user=([^&]+)/);
+        if (inferredMatch?.[1]) {
+          targetUrl = `https://scholar.google.com/citations?user=${inferredMatch[1]}`;
+          await prisma.user.update({
+            where: { id: userId },
+            data: { scholarUrl: targetUrl },
+          });
+        } else {
+          throw new AppError(400, 'NO_SCHOLAR_URL', 'No Google Scholar URL provided or stored');
+        }
+      } else {
+        targetUrl = user.scholarUrl;
       }
-      targetUrl = user.scholarUrl;
     }
 
     if (!targetUrl) throw new AppError(400, 'NO_SCHOLAR_URL', 'Invalid URL');
