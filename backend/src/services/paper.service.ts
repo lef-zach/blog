@@ -5,6 +5,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 export class PaperService {
+  private static readonly SCHOLAR_SYNC_INTERVAL_SECONDS = 24 * 60 * 60;
+
   async createPaper(data: any, userId: string) {
     const paper = await prisma.paper.create({
       data: {
@@ -183,7 +185,8 @@ export class PaperService {
         const authorsAndVenue = $row.find('.gs_gray').first().text().trim();
         const venue = $row.find('.gs_gray').last().text().trim();
         const year = parseInt($row.find('.gsc_a_y').text().trim()) || null;
-        const citations = parseInt($row.find('.gsc_a_c').text().trim()) || 0;
+        const citationsText = $row.find('.gsc_a_c').text().trim();
+        const citations = Number(citationsText.replace(/[^\d]/g, '')) || 0;
 
         if (title) {
           papers.push({
@@ -238,6 +241,12 @@ export class PaperService {
       }
 
       await redis.del('papers:*');
+      await redis.set(
+        `papers:scholar:last-sync:${userId}`,
+        String(Date.now()),
+        'EX',
+        PaperService.SCHOLAR_SYNC_INTERVAL_SECONDS
+      );
 
       return {
         total: papers.length,

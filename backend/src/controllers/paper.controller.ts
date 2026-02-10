@@ -5,8 +5,11 @@ import { createPaperSchema, updatePaperSchema, syncPapersSchema, importBibtexSch
 import { AuthRequest } from '../middleware/auth';
 import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { AppError } from '../middleware/error';
+import { redis } from '../config/redis';
 
 const router = Router();
+const SCHOLAR_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const SCHOLAR_SYNC_LOCK_SECONDS = 5 * 60;
 
 export const createPaper = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -25,6 +28,27 @@ export const getPapers = async (req: AuthRequest, res: Response, next: NextFunct
 
     if (!userId) {
       throw new AppError(401, 'UNAUTHORIZED', 'User ID is required'); // Will trigger token refresh
+    }
+
+    const lastSyncKey = `papers:scholar:last-sync:${userId}`;
+    const syncLockKey = `papers:scholar:sync-lock:${userId}`;
+
+    const lastSyncRaw = await redis.get(lastSyncKey);
+    const lastSyncTs = lastSyncRaw ? Number(lastSyncRaw) : 0;
+    const shouldSyncNow = !Number.isFinite(lastSyncTs) || Date.now() - lastSyncTs >= SCHOLAR_SYNC_INTERVAL_MS;
+
+    if (shouldSyncNow) {
+      const lockAcquired = await redis.set(syncLockKey, String(Date.now()), 'EX', SCHOLAR_SYNC_LOCK_SECONDS, 'NX');
+
+      if (lockAcquired === 'OK') {
+        try {
+          await paperService.syncFromScholar(undefined, userId);
+        } catch (syncError: any) {
+          console.error(`Daily Scholar sync skipped for user ${userId}:`, syncError?.message || syncError);
+        } finally {
+          await redis.del(syncLockKey);
+        }
+      }
     }
 
     const result = await paperService.getPapers(userId, req.query);
