@@ -52,7 +52,15 @@ export const getPapers = async (req: AuthRequest, res: Response, next: NextFunct
     }
 
     const result = await paperService.getPapers(userId, req.query);
-    res.json({ data: result });
+    const scholarTotalCitationsRaw = await redis.get(`papers:scholar:total-citations:${userId}`);
+    const scholarTotalCitations = scholarTotalCitationsRaw ? Number(scholarTotalCitationsRaw) : null;
+
+    res.json({
+      data: {
+        ...result,
+        scholarTotalCitations: Number.isFinite(scholarTotalCitations) ? scholarTotalCitations : null,
+      },
+    });
   } catch (error) {
     next(error);
   }

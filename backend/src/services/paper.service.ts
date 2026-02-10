@@ -8,6 +8,7 @@ export class PaperService {
   private static readonly SCHOLAR_SYNC_INTERVAL_SECONDS = 24 * 60 * 60;
   private static readonly SCHOLAR_PAGE_SIZE = 100;
   private static readonly SCHOLAR_MAX_PAGES = 20;
+  private static readonly SCHOLAR_TOTAL_CITATIONS_TTL_SECONDS = 24 * 60 * 60;
 
   async createPaper(data: any, userId: string) {
     const paper = await prisma.paper.create({
@@ -280,6 +281,8 @@ export class PaperService {
         }
       }
 
+      const scholarTotalCitations = papers.reduce((sum, p) => sum + (p.citations || 0), 0);
+
       await redis.del('papers:*');
       await redis.set(
         `papers:scholar:last-sync:${userId}`,
@@ -287,9 +290,16 @@ export class PaperService {
         'EX',
         PaperService.SCHOLAR_SYNC_INTERVAL_SECONDS
       );
+      await redis.set(
+        `papers:scholar:total-citations:${userId}`,
+        String(scholarTotalCitations),
+        'EX',
+        PaperService.SCHOLAR_TOTAL_CITATIONS_TTL_SECONDS
+      );
 
       return {
         total: papers.length,
+        scholarTotalCitations,
         created: results.filter(r => r.action === 'created').length,
         updated: results.filter(r => r.action === 'updated').length,
         skippedWithoutYear,

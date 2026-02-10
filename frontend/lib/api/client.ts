@@ -531,6 +531,7 @@ export class ApiClient {
         total: number;
         totalPages: number;
       };
+      scholarTotalCitations?: number | null;
     }>(`/papers?${queryParams.toString()}`);
     return response;
   }

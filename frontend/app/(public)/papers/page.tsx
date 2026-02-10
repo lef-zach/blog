@@ -35,12 +35,16 @@ export default function PapersPage() {
         // Let's use a direct request for now to be safe, or update apiClient later.
         // Actually, let's just make a direct request to ensure we pass userId
         const fetchedPapers: Paper[] = []
+        let scholarTotalCitations: number | null = null
         let page = 1
         let totalPages = 1
 
         do {
           const response = await apiClient.getPapers({ userId, limit: 100, page })
           fetchedPapers.push(...response.data.papers)
+          if (typeof response.data.scholarTotalCitations === 'number') {
+            scholarTotalCitations = response.data.scholarTotalCitations
+          }
           totalPages = response.data.pagination.totalPages
           page += 1
         } while (page <= totalPages)
@@ -51,7 +55,8 @@ export default function PapersPage() {
         // Backend has getMetrics but it might be protected/user-specific.
         // Let's verify backend metrics endpoint. It uses req.user!.userId.
         // So public metrics are not available. We calculate locally.
-        const totalCitations = fetchedPapers.reduce((sum, p) => sum + p.citations, 0)
+        const calculatedTotalCitations = fetchedPapers.reduce((sum, p) => sum + p.citations, 0)
+        const totalCitations = scholarTotalCitations ?? calculatedTotalCitations
         const sorted = [...fetchedPapers].sort((a, b) => b.citations - a.citations)
         let hIndex = 0
         for (let i = 0; i < sorted.length; i++) {
