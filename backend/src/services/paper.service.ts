@@ -171,6 +171,7 @@ export class PaperService {
 
     try {
       const papers: any[] = [];
+      let profileTotalCitations: number | null = null;
 
       for (let page = 0; page < PaperService.SCHOLAR_MAX_PAGES; page++) {
         const cstart = page * PaperService.SCHOLAR_PAGE_SIZE;
@@ -183,6 +184,9 @@ export class PaperService {
         );
 
         const $ = cheerio.load(profileResponse.data);
+        if (page === 0) {
+          profileTotalCitations = this.extractProfileTotalCitations($);
+        }
         const rows = $('.gsc_a_tr');
 
         if (rows.length === 0) {
@@ -281,7 +285,8 @@ export class PaperService {
         }
       }
 
-      const scholarTotalCitations = papers.reduce((sum, p) => sum + (p.citations || 0), 0);
+      const summedCitations = papers.reduce((sum, p) => sum + (p.citations || 0), 0);
+      const scholarTotalCitations = profileTotalCitations ?? summedCitations;
 
       await redis.del('papers:*');
       await redis.set(
@@ -414,6 +419,17 @@ export class PaperService {
   private extractYearFromText(text: string): number | null {
     const match = text.match(/\b(19|20)\d{2}\b/);
     return match ? Number.parseInt(match[0], 10) : null;
+  }
+
+  private extractProfileTotalCitations($: cheerio.CheerioAPI): number | null {
+    const firstRow = $('#gsc_rsb_st tbody tr').first();
+    if (firstRow.length === 0) return null;
+
+    const totalText = firstRow.find('.gsc_rsb_std').first().text().trim();
+    if (!totalText) return null;
+
+    const parsed = Number(totalText.replace(/[^\d]/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private normalizeTitle(title: string): string {

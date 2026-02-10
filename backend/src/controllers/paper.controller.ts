@@ -32,10 +32,16 @@ export const getPapers = async (req: AuthRequest, res: Response, next: NextFunct
 
     const lastSyncKey = `papers:scholar:last-sync:${userId}`;
     const syncLockKey = `papers:scholar:sync-lock:${userId}`;
+    const scholarTotalKey = `papers:scholar:total-citations:${userId}`;
 
     const lastSyncRaw = await redis.get(lastSyncKey);
     const lastSyncTs = lastSyncRaw ? Number(lastSyncRaw) : 0;
-    const shouldSyncNow = !Number.isFinite(lastSyncTs) || Date.now() - lastSyncTs >= SCHOLAR_SYNC_INTERVAL_MS;
+    const scholarTotalRaw = await redis.get(scholarTotalKey);
+    const hasScholarTotal = Number.isFinite(scholarTotalRaw ? Number(scholarTotalRaw) : NaN);
+    const shouldSyncNow =
+      !hasScholarTotal ||
+      !Number.isFinite(lastSyncTs) ||
+      Date.now() - lastSyncTs >= SCHOLAR_SYNC_INTERVAL_MS;
 
     if (shouldSyncNow) {
       const lockAcquired = await redis.set(syncLockKey, String(Date.now()), 'EX', SCHOLAR_SYNC_LOCK_SECONDS, 'NX');
@@ -52,7 +58,7 @@ export const getPapers = async (req: AuthRequest, res: Response, next: NextFunct
     }
 
     const result = await paperService.getPapers(userId, req.query);
-    const scholarTotalCitationsRaw = await redis.get(`papers:scholar:total-citations:${userId}`);
+    const scholarTotalCitationsRaw = await redis.get(scholarTotalKey);
     const scholarTotalCitations = scholarTotalCitationsRaw ? Number(scholarTotalCitationsRaw) : null;
 
     res.json({
