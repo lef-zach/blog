@@ -34,10 +34,17 @@ export default function PapersPage() {
         // We need to pass userId. apiClient.getPapers constructs URLSearchParams.
         // Let's use a direct request for now to be safe, or update apiClient later.
         // Actually, let's just make a direct request to ensure we pass userId
-        const params = { userId, limit: 100 }
-        const response = await apiClient.getPapers(params)
+        const fetchedPapers: Paper[] = []
+        let page = 1
+        let totalPages = 1
 
-        const fetchedPapers = response.data.papers
+        do {
+          const response = await apiClient.getPapers({ userId, limit: 100, page })
+          fetchedPapers.push(...response.data.papers)
+          totalPages = response.data.pagination.totalPages
+          page += 1
+        } while (page <= totalPages)
+
         setPapers(fetchedPapers)
 
         // 3. Calculate Metrics (Client-side for now, or fetch from backend if endpoint supports public metrics)

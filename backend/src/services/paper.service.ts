@@ -6,6 +6,8 @@ import * as cheerio from 'cheerio';
 
 export class PaperService {
   private static readonly SCHOLAR_SYNC_INTERVAL_SECONDS = 24 * 60 * 60;
+  private static readonly SCHOLAR_PAGE_SIZE = 100;
+  private static readonly SCHOLAR_MAX_PAGES = 20;
 
   async createPaper(data: any, userId: string) {
     const paper = await prisma.paper.create({
@@ -167,76 +169,114 @@ export class PaperService {
     const userAgent = process.env.GOOGLE_SCHOLAR_USER_AGENT || 'AcademicBlogSync/1.0';
 
     try {
-      const profileResponse = await axios.get(`https://scholar.google.com/citations?user=${scholarId}&pagesize=100`, {
-        headers: { 'User-Agent': userAgent },
-        timeout: 10000,
-      });
-
-      const $ = cheerio.load(profileResponse.data);
       const papers: any[] = [];
 
-      $('.gsc_a_tr').each((_, element) => {
-        const $row = $(element);
-        const titleElement = $row.find('.gsc_a_at');
-        const title = titleElement.text().trim();
-        const relativeUrl = titleElement.attr('data-href') || titleElement.attr('href');
-        const url = relativeUrl ? `https://scholar.google.com${relativeUrl}` : null;
+      for (let page = 0; page < PaperService.SCHOLAR_MAX_PAGES; page++) {
+        const cstart = page * PaperService.SCHOLAR_PAGE_SIZE;
+        const profileResponse = await axios.get(
+          `https://scholar.google.com/citations?user=${scholarId}&pagesize=${PaperService.SCHOLAR_PAGE_SIZE}&cstart=${cstart}`,
+          {
+            headers: { 'User-Agent': userAgent },
+            timeout: 10000,
+          }
+        );
 
-        const authorsAndVenue = $row.find('.gs_gray').first().text().trim();
-        const venue = $row.find('.gs_gray').last().text().trim();
-        const year = parseInt($row.find('.gsc_a_y').text().trim()) || null;
-        const citationsText = $row.find('.gsc_a_c').text().trim();
-        const citations = Number(citationsText.replace(/[^\d]/g, '')) || 0;
+        const $ = cheerio.load(profileResponse.data);
+        const rows = $('.gsc_a_tr');
 
-        if (title) {
-          papers.push({
-            title,
-            authors: authorsAndVenue,
-            venue,
-            year,
-            citations,
-            type: this.inferType(venue),
-            url, // Scraped URL
-          });
+        if (rows.length === 0) {
+          break;
         }
-      });
 
-      const validPapers = papers.filter(p => p.year && p.year > 0);
-      const results = [];
+        rows.each((_, element) => {
+          const $row = $(element);
+          const titleElement = $row.find('.gsc_a_at');
+          const title = titleElement.text().trim();
+          const relativeUrl = titleElement.attr('data-href') || titleElement.attr('href');
+          const url = relativeUrl ? `https://scholar.google.com${relativeUrl}` : null;
 
-      for (const paper of validPapers) {
-        // Normalization: lower case and trim
-        const normalizedTitle = paper.title.toLowerCase().trim();
+          const authorsAndVenue = $row.find('.gs_gray').first().text().trim();
+          const venue = $row.find('.gs_gray').last().text().trim();
+          const yearText = $row.find('.gsc_a_y').text().trim();
+          const yearFromCell = Number.parseInt(yearText, 10);
+          const venueYear = this.extractYearFromText(venue);
+          const year = Number.isFinite(yearFromCell) ? yearFromCell : venueYear;
+          const citationsText = $row.find('.gsc_a_c').text().trim();
+          const citations = Number(citationsText.replace(/[^\d]/g, '')) || 0;
 
-        const existing = await prisma.paper.findFirst({
-          where: {
-            userId,
-            year: paper.year,
-            title: {
-              equals: paper.title,
-              mode: 'insensitive'
-            }
-          },
+          if (title) {
+            papers.push({
+              title,
+              authors: authorsAndVenue,
+              venue,
+              year,
+              citations,
+              type: this.inferType(venue),
+              url,
+            });
+          }
         });
 
-        if (existing) {
+        if (rows.length < PaperService.SCHOLAR_PAGE_SIZE) {
+          break;
+        }
+      }
+
+      const existingPapers = await prisma.paper.findMany({
+        where: { userId },
+        select: { id: true, title: true, year: true },
+      });
+
+      const existingByTitleYear = new Map<string, string>();
+      const existingByTitle = new Map<string, string>();
+
+      for (const existing of existingPapers) {
+        const normalizedTitle = this.normalizeTitle(existing.title);
+        existingByTitleYear.set(`${normalizedTitle}|${existing.year}`, existing.id);
+        if (!existingByTitle.has(normalizedTitle)) {
+          existingByTitle.set(normalizedTitle, existing.id);
+        }
+      }
+
+      const results = [];
+      let skippedWithoutYear = 0;
+
+      for (const paper of papers) {
+        const normalizedTitle = this.normalizeTitle(paper.title);
+        let existingId: string | undefined;
+
+        if (paper.year && paper.year > 0) {
+          existingId = existingByTitleYear.get(`${normalizedTitle}|${paper.year}`);
+        }
+
+        if (!existingId && (!paper.year || paper.year <= 0)) {
+          existingId = existingByTitle.get(normalizedTitle);
+        }
+
+        if (existingId) {
           const updated = await prisma.paper.update({
-            where: { id: existing.id },
+            where: { id: existingId },
             data: {
               citations: paper.citations,
               venue: paper.venue,
-              url: paper.url, // Update URL
+              url: paper.url,
             },
           });
           results.push({ action: 'updated', paper: updated });
-        } else {
+        } else if (paper.year && paper.year > 0) {
           const created = await prisma.paper.create({
             data: {
-              ...paper, // Includes url
+              ...paper,
               userId,
             },
           });
+          existingByTitleYear.set(`${normalizedTitle}|${paper.year}`, created.id);
+          if (!existingByTitle.has(normalizedTitle)) {
+            existingByTitle.set(normalizedTitle, created.id);
+          }
           results.push({ action: 'created', paper: created });
+        } else {
+          skippedWithoutYear += 1;
         }
       }
 
@@ -252,6 +292,7 @@ export class PaperService {
         total: papers.length,
         created: results.filter(r => r.action === 'created').length,
         updated: results.filter(r => r.action === 'updated').length,
+        skippedWithoutYear,
         papers: results,
       };
     } catch (error: any) {
@@ -358,6 +399,19 @@ export class PaperService {
       return 'THESIS';
     }
     return 'JOURNAL';
+  }
+
+  private extractYearFromText(text: string): number | null {
+    const match = text.match(/\b(19|20)\d{2}\b/);
+    return match ? Number.parseInt(match[0], 10) : null;
+  }
+
+  private normalizeTitle(title: string): string {
+    return title
+      .toLowerCase()
+      .normalize('NFKC')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private parseBibtex(bibtex: string): any[] {

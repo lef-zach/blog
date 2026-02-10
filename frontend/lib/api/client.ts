@@ -508,6 +508,7 @@ export class ApiClient {
 
   // Paper methods
   async getPapers(params?: {
+    page?: number;
     limit?: number;
     offset?: number;
     type?: string;
@@ -515,6 +516,7 @@ export class ApiClient {
     userId?: string;
   }) {
     const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
     if (params?.type) queryParams.append('type', params.type);
