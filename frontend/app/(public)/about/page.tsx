@@ -1,43 +1,69 @@
-"use client";
-
-import { useState, useEffect } from 'react';
 import { Mail, Github, Linkedin, Twitter, FileText, BookOpen } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { apiClient, Article } from '@/lib/api/client';
-import dynamic from 'next/dynamic';
+import PostContentBoxes from '@/components/PostContentBoxes'
+import type { Article } from '@/lib/api/client'
 
-const PostContentBoxes = dynamic(() => import('@/components/PostContentBoxes'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse h-40 bg-muted rounded-md" />
-});
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+const INTERNAL_API_BASE = API_BASE_URL.startsWith('http')
+  ? API_BASE_URL
+  : `http://backend:3001${API_BASE_URL}`
 
-export default function AboutPage() {
-  const [article, setArticle] = useState<Article | null>(null);
-  const [loading, setLoading] = useState(true);
+export const dynamic = 'force-dynamic'
 
-  useEffect(() => {
-    async function fetchAboutContent() {
-      try {
-        setLoading(true);
-        const response = await apiClient.getPublicSettings();
-        const settings = response.data;
-        if (settings.aboutArticleId) {
-          const articleRes = await apiClient.request<Article>(`/articles/${settings.aboutArticleId}`);
-          setArticle(articleRes.data);
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch about page:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAboutContent();
-  }, []);
-
-  if (loading) {
-    return <div className="container py-12 text-center">Loading...</div>;
+type PublicSettingsPayload = {
+  data?: {
+    aboutArticleId?: string | null
   }
+}
+
+type ArticlePayload = {
+  data?: Article
+}
+
+async function fetchPublicAboutArticleId(): Promise<string | null> {
+  try {
+    const response = await fetch(`${INTERNAL_API_BASE}/profile/public`, {
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as PublicSettingsPayload
+    return payload?.data?.aboutArticleId || null
+  } catch (error) {
+    console.error('Failed to fetch public about settings:', error)
+    return null
+  }
+}
+
+async function fetchAboutArticle(aboutArticleId: string | null): Promise<Article | null> {
+  if (!aboutArticleId) {
+    return null
+  }
+
+  try {
+    const response = await fetch(`${INTERNAL_API_BASE}/articles/${aboutArticleId}`, {
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as ArticlePayload
+    return payload?.data || null
+  } catch (error) {
+    console.error('Failed to fetch about article:', error)
+    return null
+  }
+}
+
+export default async function AboutPage() {
+  const aboutArticleId = await fetchPublicAboutArticleId()
+  const article = await fetchAboutArticle(aboutArticleId)
 
   if (article) {
     const featuredLayout = (article.featuredImageLayout || 'BANNER').toLowerCase();
