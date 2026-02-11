@@ -200,6 +200,43 @@ export class ArticleService {
     });
   }
 
+  async getPublicArticleMetadataBySlug(slugOrId: string) {
+    const article = await prisma.article.findFirst({
+      where: {
+        OR: [
+          { slug: slugOrId },
+          { id: slugOrId },
+        ],
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+      },
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        metaDescription: true,
+        featuredImage: true,
+      },
+    });
+
+    if (!article) {
+      throw new AppError(404, 'ARTICLE_NOT_FOUND', 'Article not found');
+    }
+
+    const featuredImage = article.featuredImage || null;
+    const featuredImageIsData = !!featuredImage && featuredImage.startsWith('data:image/');
+
+    return {
+      title: article.title,
+      slug: article.slug,
+      excerpt: article.excerpt,
+      metaDescription: article.metaDescription,
+      hasFeaturedImage: !!featuredImage,
+      featuredImageIsData,
+      featuredImageUrl: featuredImage && !featuredImageIsData ? featuredImage : null,
+    };
+  }
+
   async ensureShortCode(articleId: string, currentCode?: string | null) {
     if (currentCode) {
       return currentCode;

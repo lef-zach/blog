@@ -17,8 +17,10 @@ type ArticleMetadata = {
   title?: string
   excerpt?: string | null
   metaDescription?: string | null
-  featuredImage?: string | null
   slug?: string
+  hasFeaturedImage?: boolean
+  featuredImageIsData?: boolean
+  featuredImageUrl?: string | null
 }
 
 const isPrivateHostname = (hostname: string) => {
@@ -64,12 +66,6 @@ const normalizeOgImage = (value?: string | null) => {
   return null
 }
 
-const isDataImage = (value?: string | null) => {
-  if (!value) return false
-  const trimmed = value.trim()
-  return trimmed.startsWith('data:image/')
-}
-
 const resolveOgImage = (value: string | null, siteOrigin: string) => {
   if (!value) return null
   if (value.startsWith('/')) {
@@ -93,11 +89,8 @@ const fetchPublicSettings = async (): Promise<PublicSettings | null> => {
 
 const fetchArticleMetadata = async (slug: string): Promise<ArticleMetadata | null> => {
   try {
-    const response = await fetch(`${INTERNAL_API_BASE}/articles/${slug}`, {
+    const response = await fetch(`${INTERNAL_API_BASE}/articles/${slug}/meta`, {
       next: { revalidate: 300 },
-      headers: {
-        'x-internal-request': '1',
-      },
     })
     if (!response.ok) return null
     const payload = await response.json()
@@ -124,10 +117,14 @@ export async function generateMetadata({
   const siteOrigin = normalizeSiteOrigin(settings?.siteUrl || settings?.siteUrls?.[0]) || 'http://localhost'
   const canonicalUrl = `${siteOrigin}/blog/${article.slug || params.slug}`
   const description = article.excerpt || article.metaDescription || article.title || ''
-  const featuredImageIsData = isDataImage(article.featuredImage)
   const featuredImageProxy = `${siteOrigin}/api/v1/articles/${article.slug || params.slug}/featured-image`
+  const articleOgImage = article.hasFeaturedImage
+    ? article.featuredImageIsData
+      ? featuredImageProxy
+      : normalizeOgImage(article.featuredImageUrl)
+    : null
   const ogImage = resolveOgImage(
-    (featuredImageIsData ? featuredImageProxy : normalizeOgImage(article.featuredImage))
+    articleOgImage
       || normalizeOgImage(settings?.seo?.ogImage)
       || '/opengraph-image',
     siteOrigin

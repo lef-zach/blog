@@ -102,6 +102,16 @@ export const getArticleBySlug = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+export const getArticleMetadataBySlug = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { slug } = req.params;
+    const article = await articleService.getPublicArticleMetadataBySlug(slug);
+    res.json({ data: article });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getArticleFeaturedImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { slug } = req.params;
@@ -207,6 +217,7 @@ export const getVersions = async (req: AuthRequest, res: Response, next: NextFun
 // Route definitions
 router.post('/', authenticate, authorize('ADMIN'), writeLimiter, createArticle);
 router.get('/', optionalAuthenticate, getArticles);
+router.get('/:slug/meta', getArticleMetadataBySlug);
 router.get('/:slug/featured-image', getArticleFeaturedImage);
 router.get('/:slug', getArticleBySlug);
 router.put('/:id', authenticate, authorize('ADMIN'), writeLimiter, updateArticle);
